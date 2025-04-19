@@ -7,19 +7,49 @@ import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class Server implements Runnable{
     private ServerSocket socket;
-    public Server(int port) throws IOException, ClassNotFoundException {
-        this.socket = new ServerSocket(port, 0, InetAddress.getByName("localhost"));
+    /**
+     * A list of integers that stores clients' sockets.
+     * */
+    private ArrayList<Socket> connectedClients;
+    private boolean gameHasStarted = false;
+    private int port;
 
+    public int getPort(){
+        return this.port;
+    }
+
+    public Server(int port) throws IOException, ClassNotFoundException {
+        this.port = port;
+        this.socket = new ServerSocket(port, 0, InetAddress.getByName("localhost"));
         System.out.println("The server has been set up");
+        this.connectedClients = new ArrayList<>();
+    }
+
+    /**
+     * It changes the state of <code>gameHasStarted</code> to True.
+     * */
+    public void startGame(){
+        this.gameHasStarted = true;
+    }
+
+    /**
+     * It makes serverSocket stop listening for new joining clients, however it will still be able to communicate
+     * with previously connected sockets.
+     * */
+    public void stopListeningForIncomingConnections() throws IOException {
+        socket.close();
     }
 
     @Override
     public void run() {
-        //It's listening for incoming connection using main thread
+        //It's listening for incoming connection, it stops running when gameHasStarted
         while(!socket.isClosed()){
+            if(gameHasStarted)
+                break;
             System.out.println("It is checking for incoming connections all the time");
             //It blocks because accepting is a while loop until a new user connects
             Socket clientSocket = null;
@@ -27,13 +57,20 @@ public class Server implements Runnable{
                 clientSocket = socket.accept();
                 ClientHandler clientHandler = new ClientHandler(clientSocket);
                 clientHandler.start();
+                //Add sockets to the list so server has easy access in future
+                connectedClients.add(clientSocket);
+
             } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException(e);
+                System.out.println("It throws an exception,however it might be due to the fact that serverSocket was closed");
             }
 
 
             //It happens after new user has been connected with our server
 
+        }
+
+        if(gameHasStarted){
+            System.out.println("It happens for once!,it should tell clients to load a map");
         }
     }
 
@@ -48,13 +85,10 @@ public class Server implements Runnable{
         @Override
         public void run() {
             while(this.socket.isConnected()){
-                System.out.println("SERVER: It listens for user "+clientPort);
+                //System.out.println("SERVER: It listens for user "+clientPort);
             }
         }
     }
 
-    public static void main(String [ ] args) throws IOException, ClassNotFoundException {
 
-
-    }
 }
