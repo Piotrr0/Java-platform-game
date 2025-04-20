@@ -22,26 +22,19 @@ import java.util.Objects;
 
 public class Main extends Application {
 
-
-    
-    public static void main(String[] args) {
-        launch(args);
-
-    }
-
-
+    public static Client currentClient; // static reference to client
 
     @Override
     public void start(Stage primaryStage) throws IOException {
-
-
+        System.out.println("Hi I am a client!");
         Parent root = FXMLLoader.load(getClass().getResource("menu.fxml"));
         Controller.setMainStage(primaryStage);
-
         primaryStage.setTitle("Platform game");
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
     }
 
-
+    public static void main(String[] args) {
+        launch(args);
+    }
 }

@@ -1,9 +1,6 @@
 package com.example.game;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -17,14 +14,22 @@ public class Server implements Runnable{
     private ArrayList<Socket> connectedClients;
     private boolean gameHasStarted = false;
     private int port;
+    private String hostname;
+
+
 
     public int getPort(){
         return this.port;
     }
+    public String getHostname(){
+        return this.hostname;
+    }
 
-    public Server(int port) throws IOException, ClassNotFoundException {
+
+    public Server(String hostname,int port) throws IOException, ClassNotFoundException {
         this.port = port;
-        this.socket = new ServerSocket(port, 0, InetAddress.getByName("localhost"));
+        this.hostname = hostname;
+        this.socket = new ServerSocket(port, 0, InetAddress.ofLiteral(hostname));
         System.out.println("The server has been set up");
         this.connectedClients = new ArrayList<>();
     }
@@ -42,6 +47,17 @@ public class Server implements Runnable{
      * */
     public void stopListeningForIncomingConnections() throws IOException {
         socket.close();
+    }
+
+    /**
+     * It broadcasts message to everyone, basically saying it sends message to everyone in the list of clients
+     * @param msg content of message to be sent
+     * */
+    public void broadcastMessage(String msg) throws IOException {
+        for(int i =0;i<connectedClients.size();i++){
+            DataOutputStream out = new DataOutputStream(connectedClients.get(i).getOutputStream());
+            out.writeUTF(msg);
+        }
     }
 
     @Override
@@ -71,6 +87,11 @@ public class Server implements Runnable{
 
         if(gameHasStarted){
             System.out.println("It happens for once!,it should tell clients to load a map");
+            try {
+                broadcastMessage("LOAD_MAP");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

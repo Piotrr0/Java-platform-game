@@ -44,7 +44,8 @@ public class Controller {
         mainStage.setScene(new Scene(root));
 
         int port = 50000; // or any free port number you like
-        server = new Server(port);
+        String hostname = "10.10.10.124";
+        server = new Server(hostname,port);
         Thread serverThread = new Thread(server);
         serverThread.start(); // starts the run() method in a new thread
     }
@@ -56,24 +57,18 @@ public class Controller {
 
     }
 
-    public void joinLobby(ActionEvent actionEvent) throws IOException, ClassNotFoundException {
-
-
-
-
+    public void joinLobby(ActionEvent actionEvent) throws IOException {
         String hostname = hostnameField.getText();
         int port = Integer.parseInt(portField.getText());
 
-        // This should probably become a full Client class later
-        Client client = new Client(hostname,port);
-        Thread clientThread = new Thread(client);
-        clientThread.start(); // starts the run() method in a new thread
-
+        Main.currentClient = new Client(hostname, port);
 
         joinLobbyButton.setVisible(false);
         lobbyInformation.setVisible(true);
 
+
     }
+
 
     public void handleGoBackToMenuButton(ActionEvent actionEvent) throws IOException {
         Parent root = FXMLLoader.load(getClass().getResource("menu.fxml"));
@@ -83,9 +78,10 @@ public class Controller {
     public void handleStartButton(ActionEvent actionEvent) throws IOException, ClassNotFoundException {
         System.out.println("Host wants to start a game");
         if (server != null) {
+            //WHEN WE START we also want
+            Main.currentClient = new Client(server.getHostname(), server.getPort());
             server.stopListeningForIncomingConnections(); // This should close serverSocket
             server.startGame(); // This changes server's state
-
 
 
 
