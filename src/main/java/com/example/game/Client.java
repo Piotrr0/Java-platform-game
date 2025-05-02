@@ -12,59 +12,83 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.example.game.Controller.mainStage;
 
+/**
+ * For now a client has a special thread that listents to incoming messages, if it receives one it is sent to a message that should handle it.
+ * */
 
 public class Client{
-    private String serverHostname;
+    private String serverIPAdress;
     private int serverPort;
     private Socket clientSocket;
 
-    public Client(String serverHostname,int serverPort) throws IOException {
-        this.clientSocket = new Socket(serverHostname,serverPort);
+    //We should edit this when we want to change the map
+    Controller controller;
 
-        ClientSender clientSender = new ClientSender();
+
+    public Client(String serverIPAdress,int serverPort,Controller controller) throws IOException {
+        this.clientSocket = new Socket(serverIPAdress,serverPort);
+        this.controller = controller;
         ClientReceiver clientReceiver = new ClientReceiver();
-
-
-        Thread clientSenderThread = new Thread(clientSender);
-        clientSenderThread.start();
-
         Thread clientReceiverThread = new Thread(clientReceiver);
         clientReceiverThread.start();
-
-
     }
 
-    private class ClientSender implements Runnable{
 
-        @Override
-        public void run() {
-
-        }
-    }
 
     private class ClientReceiver implements Runnable{
 
-    public void handleSocketMessage(String msg) throws IOException {
-        if (Objects.equals(msg, "LOAD_MAP")){
 
+    /**
+     * This function is called by other function and it is used to handle a message from request
+     * @param msg content of the message inside the request
+     * */
+    private void handleSocketMessage(String msg) throws IOException {
+
+
+        if (Objects.equals(msg, "LOAD_MAP")){
 
             Platform.runLater(()->{
                 try {
-                    loadMap();
+                    controller.loadMap();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+
             });
+            return;
 
 
-            System.out.println("I should load map right now");
+
         }
-        else{
-            System.out.println("Nieznana komenda! Odebrano: "+msg);
+
+
+        /**Pattern for a request to change color of rectangle is
+         * RectangleChangeColor;R;G;B;ID e.g RectangleChangeColor;40;50;60;5 means that it should change color to RGB(40,50,60) for a rectangle with ID of 5
+         * */
+        Pattern rectangleColorPattern = Pattern.compile("^RectangleChangeColor;(\\d+);(\\d+);(\\d+);(\\d+)$");
+        Matcher rectangleMatcher = rectangleColorPattern.matcher(msg);
+        if (rectangleMatcher.matches()) {
+            int r = Integer.parseInt(rectangleMatcher.group(1));
+            int g = Integer.parseInt(rectangleMatcher.group(2));
+            int b = Integer.parseInt(rectangleMatcher.group(3));
+            int id = Integer.parseInt(rectangleMatcher.group(4));
+
+            if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                controller.changeRectangleColor(r, g, b, id); // Hypothetical method
+            } else {
+                System.out.println("Invalid RGB values: " + msg);
+            }
+            return;
         }
+
+
+        System.out.println("Nieznana komenda! Odebrano: "+msg);
+
     }
 
     @Override
@@ -85,9 +109,7 @@ public class Client{
     }
 
 
-    public void loadMap() throws IOException {
-        Controller.loadMap();
-    }
+
 
 
 }

@@ -13,11 +13,11 @@ import java.util.Objects;
 /**
  * That's the way I'm planning to do network architecture, I will see in practice if its even possible
  *
- * 1.Have clients send their inputs to server at fixed intervals (without being asked)
+ * 1. Server should request if any changes happened on client side and if so, what were they? e.g server will ask if particular player wanted to move, if so it will proceed to ask where does it want to move?
  *
- *2.Server validates and broadcasts to other clients
+ *2. Client will reply to the request and if this information is worth sending to server it will be sent from client to server
  *
- *3.This is how most FPS games handle input
+ *3. After server processes all inputs from all clients it will broadcast message to all clients with current state of the game
  * */
 
 public class Main extends Application {

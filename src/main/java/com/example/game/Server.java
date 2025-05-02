@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Server implements Runnable{
     private ServerSocket socket;
@@ -15,7 +16,7 @@ public class Server implements Runnable{
     private boolean gameHasStarted = false;
     private int port;
     private String hostname;
-
+    private Random random;
 
 
     public int getPort(){
@@ -32,6 +33,7 @@ public class Server implements Runnable{
         this.socket = new ServerSocket(port, 0, InetAddress.ofLiteral(hostname));
         System.out.println("The server has been set up");
         this.connectedClients = new ArrayList<>();
+        this.random = new Random();
     }
 
     /**
@@ -85,10 +87,32 @@ public class Server implements Runnable{
 
         }
 
+
+        //Once the game has started we tell all users to load a map
         if(gameHasStarted){
-            System.out.println("It happens for once!,it should tell clients to load a map");
             try {
                 broadcastMessage("LOAD_MAP");
+                //Let's wait with handling the game logic for a moment because we should give clients some time to process loading a map
+                Thread.sleep(2000);
+            } catch (Exception e) {
+                System.out.println("Problem with loading a map!");
+            }
+        }
+
+
+        while(gameHasStarted){
+            try {
+                Thread.sleep(50);
+                int r = this.random.nextInt(256); // 0–255
+                int g = this.random.nextInt(256);
+                int b = this.random.nextInt(256);
+                int id = this.random.nextInt(110); // 0 to rows*columns - 1
+                broadcastMessage("RectangleChangeColor;"+r+";"+g+";"+b+";"+id);
+
+
+
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
