@@ -19,6 +19,9 @@ public class Server implements Runnable{
     private Random random;
     private int numberOfRows,numberOfColumns;
 
+    //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
+    private int polingInterval = 100;
+
 
 
 
@@ -31,7 +34,7 @@ public class Server implements Runnable{
 
 
     public Server(String hostname,int port) throws IOException, ClassNotFoundException {
-        System.out.println("The server has been set up with "+numberOfRows+" rows and "+numberOfColumns+" columns");
+        System.out.println("I AM THE SERVER!");
         this.port = port;
         this.hostname = hostname;
         this.numberOfColumns = 0;
@@ -119,7 +122,7 @@ public class Server implements Runnable{
 
         while(gameHasStarted){
             try {
-                Thread.sleep(1000);
+                Thread.sleep(polingInterval);
                 int r = this.random.nextInt(256); // 0–255
                 int g = this.random.nextInt(256);
                 int b = this.random.nextInt(256);
@@ -150,8 +153,7 @@ public class Server implements Runnable{
             while(this.socket.isConnected()){
                 try {
                     DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-
-                    System.out.println("Otrzymalem wiadomosc ze : "+in.readUTF());
+                    System.out.println("Uzytkownik  "+socket+"mowi mi ze: "+in.readUTF());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

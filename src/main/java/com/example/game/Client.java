@@ -5,6 +5,7 @@ import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 
 import java.io.BufferedInputStream;
@@ -39,7 +40,10 @@ public class Client{
         clientReceiverThread.start();
     }
 
-    
+    public void sendDataToserver(String msg) throws IOException {
+        DataOutputStream out = new DataOutputStream(this.clientSocket.getOutputStream());
+        out.writeUTF(msg);
+    }
 
     private class ClientReceiver implements Runnable{
 
@@ -91,10 +95,25 @@ public class Client{
             //Sprawdzamy jaki przycisk zostal nacisniety
             Event pressedKey = controller.returnPressedKey();
             if(pressedKey == null){
-                System.out.println("Uzytkownik nic nie wcisnal, powiedzmy serwerowi ze ten klient nie chce sie poruszac");
+                //System.out.println("Uzytkownik nic nie wcisnal, powiedzmy serwerowi ze ten klient nie chce sie poruszac");
             }
             else{
-                System.out.println("Uzytkownik wcisnal :"+pressedKey.getTarget());
+                switch (((KeyEvent)pressedKey).getCode()){
+                    case UP:
+                        sendDataToserver("MOVE_UP");
+                        break;
+                    case DOWN:
+                        sendDataToserver("MOVE_DOWN");
+                        break;
+                    case RIGHT:
+                        sendDataToserver("MOVE_RIGHT");
+                        break;
+                    case LEFT:
+                        sendDataToserver("MOVE_LEFT");
+                        break;
+                }
+
+
             }
             return;
         }
