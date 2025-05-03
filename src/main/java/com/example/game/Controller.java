@@ -1,6 +1,7 @@
 package com.example.game;
 
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -34,6 +35,11 @@ public class Controller {
     @FXML
     Button buttonTest;
 
+    @FXML
+    Button movingButton;
+
+    private Event pressedButton;
+
     /**
      * <code>GridMap</code> contains rectangle in each Cell. This is the list that stores them.
      * It's one dimension since weird behavior of JavaFX GridPane. Let's say that you have 10 x 10 gridPane:
@@ -61,6 +67,7 @@ public class Controller {
 
     public Controller(){
         this.rectangleList = new ArrayList<>();
+        this.pressedButton = null;
     }
 
     public static void setMainStage(Stage stage) {
@@ -120,36 +127,53 @@ public class Controller {
 
 
 
+    /**
+     * It loads a new map from <code>client.fxml</code>. It creates a totally new controller and returns it.
+     * Don't worry just assign older controller to the return object.
+     * **/
+    public Controller loadMap() throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("client.fxml"));
+        Parent root = loader.load();
+        Controller newController = loader.getController();
 
-    public void loadMap() throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("client.fxml"));
         mainStage.setScene(new Scene(root));
-        this.gridMap = (GridPane) mainStage.getScene().lookup("#gridMap");
+        newController.gridMap = (GridPane) mainStage.getScene().lookup("#gridMap");
 
-        /**
-         * We already have created gridPane inside .fxml file but we also want to fill it with rectangles because rectangles are editable
-         * */
-        for(int col =0;col<gridMap.getColumnCount();col++){
-
-            for(int row =0;row<gridMap.getRowCount();row++){
+        for (int col = 0; col < newController.gridMap.getColumnCount(); col++) {
+            for (int row = 0; row < newController.gridMap.getRowCount(); row++) {
                 Pane cellContainer = new Pane();
                 Rectangle rectangle = new Rectangle();
                 rectangle.setFill(Color.GOLD);
-
-                // Make rectangle match container size
                 rectangle.widthProperty().bind(cellContainer.widthProperty());
                 rectangle.heightProperty().bind(cellContainer.heightProperty());
-
                 cellContainer.getChildren().add(rectangle);
-                gridMap.add(cellContainer, col, row);
-                rectangleList.add(rectangle);
+                newController.gridMap.add(cellContainer, col, row);
+                newController.rectangleList.add(rectangle);
             }
-
         }
 
+        //We need to tell server how much rows and columns gridMap has so it can keep track of the map.
+        if(server != null)
+            server.setNumberOfRowsAndColumns(newController.gridMap.getRowCount(),newController.gridMap.getColumnCount());
+        return newController;
+    }
 
+    /**
+     *
+     * */
+    @FXML
+    private void handleKeyEvent(Event event){
+        this.pressedButton = event;
+    }
 
-
+    /**
+     * Funkcja zwraca ostatnio wcisniety przycisk*
+     * @return zwraca <code>Event</code> ktory jest obiektem opisujacym wcisniety klawisz.
+     * */
+    public Event returnPressedKey(){
+        Event tmp = this.pressedButton;
+        this.pressedButton = null;
+        return tmp;
     }
 
 

@@ -1,6 +1,7 @@
 package com.example.game;
 
 import javafx.application.Platform;
+import javafx.event.Event;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -27,7 +28,7 @@ public class Client{
     private Socket clientSocket;
 
     //We should edit this when we want to change the map
-    Controller controller;
+    private Controller controller;
 
 
     public Client(String serverIPAdress,int serverPort,Controller controller) throws IOException {
@@ -38,7 +39,7 @@ public class Client{
         clientReceiverThread.start();
     }
 
-
+    
 
     private class ClientReceiver implements Runnable{
 
@@ -54,7 +55,7 @@ public class Client{
 
             Platform.runLater(()->{
                 try {
-                    controller.loadMap();
+                    controller = controller.loadMap();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -86,6 +87,17 @@ public class Client{
             return;
         }
 
+        if(Objects.equals(msg, "HAS_GAME_CHANGED")){
+            //Sprawdzamy jaki przycisk zostal nacisniety
+            Event pressedKey = controller.returnPressedKey();
+            if(pressedKey == null){
+                System.out.println("Uzytkownik nic nie wcisnal, powiedzmy serwerowi ze ten klient nie chce sie poruszac");
+            }
+            else{
+                System.out.println("Uzytkownik wcisnal :"+pressedKey.getTarget());
+            }
+            return;
+        }
 
         System.out.println("Nieznana komenda! Odebrano: "+msg);
 

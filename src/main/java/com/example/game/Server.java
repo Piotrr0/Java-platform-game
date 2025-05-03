@@ -17,6 +17,9 @@ public class Server implements Runnable{
     private int port;
     private String hostname;
     private Random random;
+    private int numberOfRows,numberOfColumns;
+
+
 
 
     public int getPort(){
@@ -28,11 +31,14 @@ public class Server implements Runnable{
 
 
     public Server(String hostname,int port) throws IOException, ClassNotFoundException {
+        System.out.println("The server has been set up with "+numberOfRows+" rows and "+numberOfColumns+" columns");
         this.port = port;
         this.hostname = hostname;
+        this.numberOfColumns = 0;
+        this.numberOfRows = 0;
         this.socket = new ServerSocket(port, 0, InetAddress.ofLiteral(hostname));
-        System.out.println("The server has been set up");
         this.connectedClients = new ArrayList<>();
+        //It's useful only for testing blinking rectangles, you can remove if if you want
         this.random = new Random();
     }
 
@@ -61,6 +67,17 @@ public class Server implements Runnable{
             out.writeUTF(msg);
         }
     }
+
+    /**
+     * It sets the current number of rows and columns of the GridMap, it is useful to track the state of game
+     * */
+    public void setNumberOfRowsAndColumns(int numberOfRows,int numberOfColumns){
+        this.numberOfRows = numberOfRows;
+        this.numberOfColumns = numberOfColumns;
+    }
+
+
+
 
     @Override
     public void run() {
@@ -102,12 +119,13 @@ public class Server implements Runnable{
 
         while(gameHasStarted){
             try {
-                Thread.sleep(50);
+                Thread.sleep(1000);
                 int r = this.random.nextInt(256); // 0–255
                 int g = this.random.nextInt(256);
                 int b = this.random.nextInt(256);
                 int id = this.random.nextInt(110); // 0 to rows*columns - 1
-                broadcastMessage("RectangleChangeColor;"+r+";"+g+";"+b+";"+id);
+                broadcastMessage("RectangleChangeColor;"+r+";"+g+";"+b+";"+1);
+                broadcastMessage("HAS_GAME_CHANGED");
 
 
 
@@ -130,7 +148,13 @@ public class Server implements Runnable{
         @Override
         public void run() {
             while(this.socket.isConnected()){
-                //System.out.println("SERVER: It listens for user "+clientPort);
+                try {
+                    DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+
+                    System.out.println("Otrzymalem wiadomosc ze : "+in.readUTF());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
