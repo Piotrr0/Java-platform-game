@@ -5,25 +5,21 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 public class Server implements Runnable{
     private ServerSocket socket;
-    /**
-     * A list of integers that stores clients' sockets.
-     * */
     private ArrayList<Socket> connectedClients;
     private boolean gameHasStarted = false;
     private int port;
     private String hostname;
-    private Random random;
-    private int numberOfRows,numberOfColumns;
+
+    private HashMap<Integer, double[]> playerPositions;
+    private int nextPlayerId = 0;
 
     //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
     private int polingInterval = 100;
-
-
-
 
     public int getPort(){
         return this.port;
@@ -32,24 +28,50 @@ public class Server implements Runnable{
         return this.hostname;
     }
 
-
     public Server(String hostname,int port) throws IOException, ClassNotFoundException {
         System.out.println("I AM THE SERVER!");
         this.port = port;
         this.hostname = hostname;
-        this.numberOfColumns = 0;
-        this.numberOfRows = 0;
         this.socket = new ServerSocket(port, 0, InetAddress.ofLiteral(hostname));
         this.connectedClients = new ArrayList<>();
-        //It's useful only for testing blinking rectangles, you can remove if if you want
-        this.random = new Random();
+        this.playerPositions = new HashMap<>();
+
+        playerPositions.put(0, new double[]{200, 200});
     }
 
-    /**
-     * It changes the state of <code>gameHasStarted</code> to True.
-     * */
-    public void startGame(){
+    public void startGame()
+    {
         this.gameHasStarted = true;
+
+        Thread gameLoopThread = new Thread(this::gameLoop);
+        gameLoopThread.start();
+    }
+
+    private void gameLoop()
+    {
+        while (gameHasStarted) {
+            try
+            {
+                Thread.sleep(polingInterval);
+                broadcastPositions();
+            }
+            catch (Exception e)
+            {
+                System.err.println("Error in game loop: " + e.getMessage());
+            }
+        }
+    }
+
+    private void broadcastPositions() throws IOException
+    {
+        for (HashMap.Entry<Integer, double[]> entry : playerPositions.entrySet())
+        {
+            int playerId = entry.getKey();
+            double[] pos = entry.getValue();
+
+            String posMsg = String.format(java.util.Locale.US, "POSITION_UPDATE:%d:%.2f:%.2f", playerId, pos[0], pos[1]);
+            broadcastMessage(posMsg);
+        }
     }
 
     /**
@@ -65,35 +87,31 @@ public class Server implements Runnable{
      * @param msg content of message to be sent
      * */
     public void broadcastMessage(String msg) throws IOException {
-        for(int i =0;i<connectedClients.size();i++){
+        for (int i = 0; i < connectedClients.size(); i++)
+        {
             DataOutputStream out = new DataOutputStream(connectedClients.get(i).getOutputStream());
             out.writeUTF(msg);
         }
     }
 
-    /**
-     * It sets the current number of rows and columns of the GridMap, it is useful to track the state of game
-     * */
-    public void setNumberOfRowsAndColumns(int numberOfRows,int numberOfColumns){
-        this.numberOfRows = numberOfRows;
-        this.numberOfColumns = numberOfColumns;
-    }
-
-
-
-
     @Override
     public void run() {
         //It's listening for incoming connection, it stops running when gameHasStarted
-        while(!socket.isClosed()){
-            if(gameHasStarted)
-                break;
+        while(!gameHasStarted &&!socket.isClosed())
+        {
             System.out.println("It is checking for incoming connections all the time");
             //It blocks because accepting is a while loop until a new user connects
             Socket clientSocket = null;
             try {
                 clientSocket = socket.accept();
-                ClientHandler clientHandler = new ClientHandler(clientSocket);
+
+                int playerId = nextPlayerId++;
+                playerPositions.put(playerId, new double[]{200, 200});
+
+                DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+                out.writeUTF("PLAYER_ID:" + playerId);
+
+                ClientHandler clientHandler = new ClientHandler(clientSocket, playerId);
                 clientHandler.start();
                 //Add sockets to the list so server has easy access in future
                 connectedClients.add(clientSocket);
@@ -101,15 +119,12 @@ public class Server implements Runnable{
             } catch (IOException | ClassNotFoundException e) {
                 System.out.println("It throws an exception,however it might be due to the fact that serverSocket was closed");
             }
-
-
-            //It happens after new user has been connected with our server
-
         }
 
 
         //Once the game has started we tell all users to load a map
         if(gameHasStarted){
+
             try {
                 broadcastMessage("LOAD_MAP");
                 //Let's wait with handling the game logic for a moment because we should give clients some time to process loading a map
@@ -118,48 +133,56 @@ public class Server implements Runnable{
                 System.out.println("Problem with loading a map!");
             }
         }
-
-
-        while(gameHasStarted){
-            try {
-                Thread.sleep(polingInterval);
-                int r = this.random.nextInt(256); // 0–255
-                int g = this.random.nextInt(256);
-                int b = this.random.nextInt(256);
-                int id = this.random.nextInt(110); // 0 to rows*columns - 1
-                broadcastMessage("RectangleChangeColor;"+r+";"+g+";"+b+";"+1);
-                broadcastMessage("HAS_GAME_CHANGED");
-
-
-
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     private class ClientHandler extends Thread{
         private Socket socket;
         private int clientPort;
-        public ClientHandler(Socket socket) throws IOException, ClassNotFoundException {
+        private int playerId;
+
+        public ClientHandler(Socket socket, int playerId) throws IOException, ClassNotFoundException {
             this.socket = socket;
             this.clientPort = socket.getPort();
-            System.out.println("SERVER: New user has connected");
+            this.playerId = playerId;
+            System.out.println("SERVER: New user has connected with ID: " + playerId);
         }
         @Override
-        public void run() {
+        public void run()
+        {
             while(this.socket.isConnected()){
-                try {
+                try
+                {
                     DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-                    System.out.println("Uzytkownik  "+socket+"mowi mi ze: "+in.readUTF());
+                    String message = in.readUTF();
+
+                    double[] pos = playerPositions.get(playerId);
+                    if (pos != null) {
+                        double moveAmount = 10.0;
+
+                        switch (message) {
+                            case "MOVE_UP":
+                                pos[1] -= moveAmount;
+                                break;
+                            case "MOVE_DOWN":
+                                pos[1] += moveAmount;
+                                break;
+                            case "MOVE_RIGHT":
+                                pos[0] += moveAmount;
+                                break;
+                            case "MOVE_LEFT":
+                                pos[0] -= moveAmount;
+                                break;
+                        }
+
+                        playerPositions.put(playerId, pos);
+                    }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
+
+            playerPositions.remove(playerId);
+            connectedClients.remove(socket);
         }
     }
-
-
 }
