@@ -30,10 +30,7 @@ public class Controller {
     @FXML
     Button movingButton;
 
-    private Event pressedButton;
-    private Rectangle playerRectangle;
     private Pane gamePane;
-
     private Map<Integer, Rectangle> playerRectangles = new HashMap<>();
     private int localPlayerId = 0;
 
@@ -47,10 +44,6 @@ public class Controller {
         Same idea as above — we store the main window statically so we don't have to fetch it all the time
     */
     static Stage mainStage;
-
-    public Controller(){
-        this.pressedButton = null;
-    }
 
     public static void setMainStage(Stage stage) {
         mainStage = stage;
@@ -117,8 +110,6 @@ public class Controller {
 
     @FXML
     private void handleKeyEvent(KeyEvent event) {
-        this.pressedButton = event;
-
         try {
             String msg = null;
             switch (event.getCode()) {
@@ -146,7 +137,6 @@ public class Controller {
 
     public void setLocalPlayerId(int id) {
         localPlayerId = id;
-        System.out.println("Local player ID set to: " + localPlayerId);
     }
 
     public int getLocalPlayerId() {

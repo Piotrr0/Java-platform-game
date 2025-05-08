@@ -1,4 +1,6 @@
 package com.example.game;
+import  com.example.game.messages.ClientMessages;
+import  com.example.game.messages.ServerMessages;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -52,7 +54,7 @@ public class Server implements Runnable{
             int playerId = entry.getKey();
             double[] pos = entry.getValue();
 
-            String posMsg = String.format(java.util.Locale.US, "POSITION_UPDATE:%d:%.2f:%.2f", playerId, pos[0], pos[1]);
+            String posMsg = String.format(java.util.Locale.US, ServerMessages.POSITION_UPDATE + "%d:%.2f:%.2f", playerId, pos[0], pos[1]);
             broadcastMessage(posMsg);
         }
     }
@@ -77,12 +79,21 @@ public class Server implements Runnable{
         }
     }
 
-    @Override
-    public void run() {
+    public void broadcastMessageToClient(String msg, Socket clientSocket)
+    {
+        if(clientSocket == null || clientSocket.isClosed()) return;
+        try {
+            DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+            out.writeUTF(msg);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void waitForClients(ServerSocket socket) {
         //It's listening for incoming connection, it stops running when gameHasStarted
-        while(!gameHasStarted &&!socket.isClosed())
-        {
-            if(gameHasStarted)  break;
+        while (!gameHasStarted && !socket.isClosed()) {
+            if (gameHasStarted) break;
 
             Socket clientSocket = null;
             try {
@@ -93,24 +104,27 @@ public class Server implements Runnable{
                 connectedClients.add(clientSocket);
                 playerPositions.put(playerId, new double[]{100.0 + (playerId * 60), 100.0});
 
-                DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
-                out.writeUTF("PLAYER_ID:" + playerId);
+                broadcastMessageToClient(ServerMessages.PLAYER_ID + playerId, clientSocket);
 
                 ClientHandler clientHandler = new ClientHandler(clientSocket, playerId);
                 clientHandler.start();
 
-            }
-            catch (IOException | ClassNotFoundException e) {
+            } catch (IOException | ClassNotFoundException e) {
                 System.out.println("It throws an exception,however it might be due to the fact that serverSocket was closed");
             }
         }
+    }
 
+    @Override
+    public void run() {
+
+        waitForClients(socket);
 
         if(gameHasStarted)
         {
             try {
                 Thread.sleep(100);
-                broadcastMessage("LOAD_MAP");
+                broadcastMessage(ServerMessages.LOAD_MAP);
             } catch (Exception e) {
                 System.out.println("Problem with loading a map!");
             }
@@ -122,7 +136,7 @@ public class Server implements Runnable{
             {
                 Thread.sleep(polingInterval);
                 broadcastPositions();
-                broadcastMessage("HAS_GAME_CHANGED");
+                broadcastMessage(ServerMessages.HAS_GAME_CHANGED);
             }
             catch (InterruptedException | IOException e)
             {
@@ -150,6 +164,7 @@ public class Server implements Runnable{
             this.playerId = playerId;
             System.out.println("SERVER: New user has connected with ID: " + playerId);
         }
+
         @Override
         public void run()
         {
@@ -158,19 +173,19 @@ public class Server implements Runnable{
                     String message = in.readUTF();
 
                     double[] pos = playerPositions.get(playerId);
-                    double moveAmount = 10.0;
+                    final double moveAmount = 10.0;
 
                     switch (message) {
-                        case "MOVE_UP":
+                        case ClientMessages.MOVE_UP:
                             pos[1] -= moveAmount;
                             break;
-                        case "MOVE_DOWN":
+                        case ClientMessages.MOVE_DOWN:
                             pos[1] += moveAmount;
                             break;
-                        case "MOVE_RIGHT":
+                        case ClientMessages.MOVE_RIGHT:
                             pos[0] += moveAmount;
                             break;
-                        case "MOVE_LEFT":
+                        case ClientMessages.MOVE_LEFT:
                             pos[0] -= moveAmount;
                             break;
                         default:
