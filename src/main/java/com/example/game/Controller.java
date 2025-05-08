@@ -137,10 +137,10 @@ public class Controller {
             }
 
             if (msg != null) {
-                Main.currentClient.sendDataToServer(msg);
+                Main.currentClient.addPendingCommand(msg);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -152,7 +152,6 @@ public class Controller {
     public int getLocalPlayerId() {
         return localPlayerId;
     }
-
 
     private Color GetPlayerColor(int playerId)
     {

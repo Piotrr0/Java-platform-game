@@ -4,22 +4,23 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server implements Runnable{
     private ServerSocket socket;
-    private ArrayList<Socket> connectedClients;
+    private List<Socket> connectedClients;
     private boolean gameHasStarted = false;
     private int port;
     private String hostname;
 
-    private HashMap<Integer, double[]> playerPositions;
+    private Map<Integer, double[]> playerPositions;
     private int nextPlayerId = 0;
 
     //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
-    private int polingInterval = 100;
+    private int polingInterval = 50;
 
     public int getPort(){
         return this.port;
@@ -33,38 +34,20 @@ public class Server implements Runnable{
         this.port = port;
         this.hostname = hostname;
         this.socket = new ServerSocket(port, 0, InetAddress.ofLiteral(hostname));
-        this.connectedClients = new ArrayList<>();
-        this.playerPositions = new HashMap<>();
-
-        playerPositions.put(0, new double[]{200, 200});
+        this.connectedClients = new CopyOnWriteArrayList<>();
+        this.playerPositions = new ConcurrentHashMap<>();
     }
 
     public void startGame()
     {
         this.gameHasStarted = true;
-
-        Thread gameLoopThread = new Thread(this::gameLoop);
-        gameLoopThread.start();
-    }
-
-    private void gameLoop()
-    {
-        while (gameHasStarted) {
-            try
-            {
-                Thread.sleep(polingInterval);
-                broadcastPositions();
-            }
-            catch (Exception e)
-            {
-                System.err.println("Error in game loop: " + e.getMessage());
-            }
-        }
     }
 
     private void broadcastPositions() throws IOException
     {
-        for (HashMap.Entry<Integer, double[]> entry : playerPositions.entrySet())
+        if (playerPositions.isEmpty()) return;
+
+        for (Map.Entry<Integer, double[]> entry : playerPositions.entrySet())
         {
             int playerId = entry.getKey();
             double[] pos = entry.getValue();
@@ -87,9 +70,9 @@ public class Server implements Runnable{
      * @param msg content of message to be sent
      * */
     public void broadcastMessage(String msg) throws IOException {
-        for (int i = 0; i < connectedClients.size(); i++)
+        for (Socket connectedClient : connectedClients)
         {
-            DataOutputStream out = new DataOutputStream(connectedClients.get(i).getOutputStream());
+            DataOutputStream out = new DataOutputStream(connectedClient.getOutputStream());
             out.writeUTF(msg);
         }
     }
@@ -99,90 +82,104 @@ public class Server implements Runnable{
         //It's listening for incoming connection, it stops running when gameHasStarted
         while(!gameHasStarted &&!socket.isClosed())
         {
-            System.out.println("It is checking for incoming connections all the time");
-            //It blocks because accepting is a while loop until a new user connects
+            if(gameHasStarted)  break;
+
             Socket clientSocket = null;
             try {
                 clientSocket = socket.accept();
+                System.out.println("SERVER: Client connected from " + clientSocket.getRemoteSocketAddress());
 
                 int playerId = nextPlayerId++;
-                playerPositions.put(playerId, new double[]{200, 200});
+                connectedClients.add(clientSocket);
+                playerPositions.put(playerId, new double[]{100.0 + (playerId * 60), 100.0});
 
                 DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
                 out.writeUTF("PLAYER_ID:" + playerId);
 
                 ClientHandler clientHandler = new ClientHandler(clientSocket, playerId);
                 clientHandler.start();
-                //Add sockets to the list so server has easy access in future
-                connectedClients.add(clientSocket);
 
-            } catch (IOException | ClassNotFoundException e) {
+            }
+            catch (IOException | ClassNotFoundException e) {
                 System.out.println("It throws an exception,however it might be due to the fact that serverSocket was closed");
             }
         }
 
 
-        //Once the game has started we tell all users to load a map
-        if(gameHasStarted){
-
+        if(gameHasStarted)
+        {
             try {
+                Thread.sleep(100);
                 broadcastMessage("LOAD_MAP");
-                //Let's wait with handling the game logic for a moment because we should give clients some time to process loading a map
-                Thread.sleep(2000);
             } catch (Exception e) {
                 System.out.println("Problem with loading a map!");
             }
         }
+
+        while (gameHasStarted)
+        {
+            try
+            {
+                Thread.sleep(polingInterval);
+                broadcastPositions();
+                broadcastMessage("HAS_GAME_CHANGED");
+            }
+            catch (InterruptedException | IOException e)
+            {
+                gameHasStarted = false;
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        for (Socket clientSocket : connectedClients) {
+            try {
+                clientSocket.close();
+            } catch (IOException e) { /* ignore */ }
+        }
+
+        connectedClients.clear();
+        playerPositions.clear();
     }
 
     private class ClientHandler extends Thread{
         private Socket socket;
-        private int clientPort;
         private int playerId;
 
         public ClientHandler(Socket socket, int playerId) throws IOException, ClassNotFoundException {
             this.socket = socket;
-            this.clientPort = socket.getPort();
             this.playerId = playerId;
             System.out.println("SERVER: New user has connected with ID: " + playerId);
         }
         @Override
         public void run()
         {
-            while(this.socket.isConnected()){
-                try
-                {
-                    DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+            try (DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()))) {
+                while(socket.isConnected()){
                     String message = in.readUTF();
 
                     double[] pos = playerPositions.get(playerId);
-                    if (pos != null) {
-                        double moveAmount = 10.0;
+                    double moveAmount = 10.0;
 
-                        switch (message) {
-                            case "MOVE_UP":
-                                pos[1] -= moveAmount;
-                                break;
-                            case "MOVE_DOWN":
-                                pos[1] += moveAmount;
-                                break;
-                            case "MOVE_RIGHT":
-                                pos[0] += moveAmount;
-                                break;
-                            case "MOVE_LEFT":
-                                pos[0] -= moveAmount;
-                                break;
-                        }
-
-                        playerPositions.put(playerId, pos);
+                    switch (message) {
+                        case "MOVE_UP":
+                            pos[1] -= moveAmount;
+                            break;
+                        case "MOVE_DOWN":
+                            pos[1] += moveAmount;
+                            break;
+                        case "MOVE_RIGHT":
+                            pos[0] += moveAmount;
+                            break;
+                        case "MOVE_LEFT":
+                            pos[0] -= moveAmount;
+                            break;
+                        default:
+                            break;
                     }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
                 }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-
-            playerPositions.remove(playerId);
-            connectedClients.remove(socket);
         }
     }
 }
