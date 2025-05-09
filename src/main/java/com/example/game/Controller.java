@@ -147,7 +147,7 @@ public class Controller {
     {
         if(playerId == localPlayerId)
         {
-            return Color.BLUE;
+            return Color.GREEN;
         }
         return Color.RED;
     }
