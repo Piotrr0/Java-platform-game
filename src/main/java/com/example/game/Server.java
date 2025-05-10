@@ -4,6 +4,10 @@ import com.example.game.actors.ActorManager;
 import com.example.game.actors.Actor;
 import com.example.game.actors.Player;
 
+import com.example.game.world.World;
+import com.example.game.world.WorldFactory;
+import com.example.game.world.WorldManager;
+
 
 import java.io.*;
 import java.net.InetAddress;
@@ -21,7 +25,7 @@ public class Server implements Runnable{
     private final int port;
     private final String hostname;
 
-    private ActorManager actorManager;
+    private WorldManager worldManager;
 
     private int nextPlayerId = 0;
 
@@ -43,26 +47,32 @@ public class Server implements Runnable{
         this.hostname = hostname;
         this.socket = new ServerSocket(port, 50, InetAddress.ofLiteral(hostname));
         this.connectedClients = new CopyOnWriteArrayList<>();
-        this.actorManager = new ActorManager();
+
+        this.worldManager = new WorldManager();
+        worldManager.initializeDefaultWorlds();
     }
 
     public void startGame()
     {
         System.out.println("SERVER: Game starting...");
         this.gameHasStarted = true;
+
+        worldManager.setActiveWorld("Level2");
     }
 
-    private void broadcastActorStates() throws IOException
-    {
+    private void broadcastActorStates() throws IOException {
+        World activeWorld = worldManager.getActiveWorld();
+        if (activeWorld == null) return;
+
+        ActorManager actorManager = activeWorld.getActorManager();
         List<Actor> actorSnapshot = new ArrayList<>(actorManager.actorsById.values());
 
         if (actorSnapshot.isEmpty()) return;
 
         List<String> updateMessages = new ArrayList<>();
-        for (Actor actor : actorSnapshot)
-        {
-            String msg = String.format(java.util.Locale.US, ServerMessages.UPDATE_ACTOR + "%d:%s:%.2f:%.2f",
-                    actor.getId(), actor.getType(), actor.getX(), actor.getY());
+        for (Actor actor : actorSnapshot) {
+            String msg = String.format(java.util.Locale.US, ServerMessages.UPDATE_ACTOR + "%d:%s:%.2f:%.2f:%.2f:%.2f",
+                    actor.getId(), actor.getType(), actor.getX(), actor.getY(), actor.getWidth(), actor.getHeight());
             updateMessages.add(msg);
         }
 
@@ -72,8 +82,8 @@ public class Server implements Runnable{
     }
 
     private void broadcastAddActor(Actor actor) throws IOException {
-        String msg = String.format(java.util.Locale.US, ServerMessages.ADD_ACTOR + "%d:%s:%.2f:%.2f",
-                actor.getId(), actor.getType(), actor.getX(), actor.getY());
+        String msg = String.format(java.util.Locale.US, ServerMessages.ADD_ACTOR + "%d:%s:%.2f:%.2f:%.2f:%.2f",
+                actor.getId(), actor.getType(), actor.getX(), actor.getY(), actor.getWidth(), actor.getHeight());
         broadcastMessage(msg);
     }
 
@@ -126,7 +136,6 @@ public class Server implements Runnable{
         try { clientSocket.close(); } catch (IOException e) { /* ignore */ }
     }
 
-
     @Override
     public void run() {
         while (!gameHasStarted) {
@@ -136,13 +145,11 @@ public class Server implements Runnable{
 
                 int playerId = nextPlayerId++;
                 connectedClients.add(clientSocket);
-                Player newPlayer = actorManager.createPlayer(playerId, 100.0 + (playerId * 60), 100.0);
 
                 ClientHandler clientHandler = new ClientHandler(clientSocket, playerId, commandQueue);
                 clientHandler.start();
 
                 broadcastMessageToClient(ServerMessages.PLAYER_ID + playerId, clientSocket);
-
             }
             // TODO: I DO NOT KNOW BUT WITHOUT THIS IT DOESN'T WORK
             catch (SocketTimeoutException e) {
@@ -158,9 +165,10 @@ public class Server implements Runnable{
         }
 
         try {
-            if(gameHasStarted)
-            {
-                broadcastMessage(ServerMessages.SET_GAME_SCENE + "Level1");
+            if (gameHasStarted) {
+                broadcastMessage(ServerMessages.SET_GAME_SCENE + worldManager.getActiveWorld().getWorldName());
+                setupPlayersInActiveWorld();
+
                 broadcastActorStates();
             }
         } catch (IOException e) {
@@ -177,8 +185,7 @@ public class Server implements Runnable{
                 lastTickTime = now;
 
                 processClientCommands();
-
-                actorManager.updateServer();
+                worldManager.update();
 
                 try {
                     broadcastActorStates();
@@ -186,9 +193,7 @@ public class Server implements Runnable{
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-
-            }
-            else {
+            } else {
                 try {
                     long sleepTime = polingInterval - elapsedTime;
                     if (sleepTime > 0) {
@@ -207,7 +212,6 @@ public class Server implements Runnable{
         }
         connectedClients.clear();
         commandQueue.clear();
-        actorManager = new ActorManager();
 
         try {
             if (socket != null && !socket.isClosed()) {
@@ -218,8 +222,37 @@ public class Server implements Runnable{
         }
     }
 
+    private void setupPlayersInActiveWorld() {
+        World activeWorld = worldManager.getActiveWorld();
+        if (activeWorld == null) return;
+
+        int playerCount = 0;
+        for (int playerId = 0; playerId < nextPlayerId; playerId++) {
+            double x = 100.0 + (playerCount * 60);
+            double y = 100.0;
+            worldManager.createPlayerInActiveWorld(playerId, x, y);
+            playerCount++;
+        }
+    }
+
+    public void changeWorld(String worldName) throws IOException {
+        if (worldManager.setActiveWorld(worldName)) {
+            World world = worldManager.getActiveWorld();
+
+            broadcastMessage(ServerMessages.SET_GAME_SCENE + worldName);
+            setupPlayersInActiveWorld();
+
+            broadcastActorStates();
+        }
+    }
+
     private void processClientCommands() {
         ClientCommand command;
+        World activeWorld = worldManager.getActiveWorld();
+        if (activeWorld == null) return;
+
+        ActorManager actorManager = activeWorld.getActorManager();
+
         while ((command = commandQueue.poll()) != null) {
             Player player = actorManager.getPlayer(command.playerId);
             if (player != null) {

@@ -55,8 +55,9 @@ public class Client{
             String[] parts = msg.split(":");
             if(parts.length >= 2)
             {
+                final String sceneName = parts[1];
                 Platform.runLater(() -> {
-                    controller.setupGameScene();
+                    controller.setupGameScene(sceneName);
                 });
             }
         }
@@ -64,15 +65,17 @@ public class Client{
         void handleActorUpdate(String msg)
         {
             String[] parts = msg.split(":");
-            if (parts.length >= 5) {
+            if (parts.length >= 7) {
                 try {
                     final int actorId = Integer.parseInt(parts[1]);
                     final String actorType = parts[2];
                     final double x = Double.parseDouble(parts[3]);
                     final double y = Double.parseDouble(parts[4]);
+                    final double w = Double.parseDouble(parts[5]);
+                    final double h = Double.parseDouble(parts[6]);
 
                     Platform.runLater(() -> {
-                        controller.updateActorState(actorId, actorType, x, y);
+                        controller.updateActorState(actorId, actorType, x, y, w, h);
                     });
                 } catch (NumberFormatException e) {
                     throw new RuntimeException(e);
@@ -83,15 +86,16 @@ public class Client{
         void handleAddActor(String msg)
         {
             String[] parts = msg.split(":");
-            if (parts.length >= 5) {
+            if (parts.length >= 7) {
                 try {
                     final int actorId = Integer.parseInt(parts[1]);
                     final String actorType = parts[2];
                     final double x = Double.parseDouble(parts[3]);
                     final double y = Double.parseDouble(parts[4]);
-
+                    final double w = Double.parseDouble(parts[5]);
+                    final double h = Double.parseDouble(parts[6]);
                     Platform.runLater(() -> {
-                        controller.addActorState(actorId, actorType, x, y);
+                        controller.updateActorState(actorId, actorType, x, y, w, h);
                     });
 
                 } catch (NumberFormatException e) {

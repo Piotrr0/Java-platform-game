@@ -5,7 +5,7 @@ public class ServerMessages
     // Format: UPDATE_ACTOR:LevelName
     public static final String  SET_GAME_SCENE = "SET_GAME_SCENE:";
 
-    // Format: UPDATE_ACTOR:actorId:type:x:y[:prop1:value1...]
+    // Format: UPDATE_ACTOR:actorId:type:x:y:width:height:[:prop1:value1...]
     public static final String UPDATE_ACTOR = "UPDATE_ACTOR:";
 
     // Format: PLAYER_ID:playerId
@@ -13,7 +13,7 @@ public class ServerMessages
 
     public static final String HAS_GAME_CHANGED = "HAS_GAME_CHANGED";
 
-    // Format: ADD_ACTOR:actorId:type:x:y[:prop1:value1...]
+    // Format: ADD_ACTOR:actorId:type:x:y:width:height[:prop1:value1...]
     public static final String ADD_ACTOR = "ADD_ACTOR:";
 
     // Format: REMOVE_ACTOR:actorId

@@ -144,7 +144,7 @@ public class ActorManager {
         return player;
     }
 
-    public Actor createOrUpdateActor(int id, String type, double x, double y, boolean isLocalPlayer, Pane pane)
+    public Actor createOrUpdateActor(int id, String type, double x, double y, double width, double height, boolean isLocalPlayer, Pane pane)
     {
         if (isServer) {
             return null;
@@ -159,7 +159,7 @@ public class ActorManager {
                 players.put(id, (Player)actor);
             } else {
                 color = Color.GRAY;
-                actor = new Actor(id, x, y, 50, 50, color);
+                actor = new Actor(id, x, y, width, height, color);
             }
 
             actor.addToPane(pane);
@@ -168,6 +168,7 @@ public class ActorManager {
 
         } else {
             actor.setPosition(x, y);
+            actor.setScale(width, height);
         }
         return actor;
     }

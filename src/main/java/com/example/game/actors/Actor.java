@@ -78,6 +78,11 @@ public class Actor
         this.y = y;
     }
 
+    public void setScale(double width, double height) {
+        this.width = width;
+        this.height = height;
+    }
+
     // Server-side collision check
     public boolean collidesWith(Actor other) {
         if (!this.collidable || !other.collidable) {
@@ -98,6 +103,8 @@ public class Actor
 
     public double getX() { return x; }
     public double getY() { return y; }
+    public double getWidth() { return width; }
+    public double getHeight() { return height; }
     public boolean isCollidable() { return collidable; }
 
 }

@@ -31,6 +31,7 @@ public class Controller {
     private int localPlayerId = -1;
 
     private ActorManager actorManager;
+    private String currentLevelName;
 
     /*
         IT stores a server object, if you wonder why the fuck this is static it is because
@@ -115,11 +116,8 @@ public class Controller {
         }
     }
 
-    public void setupGameScene()
-    {
-        if (gamePane != null) {
-            return;
-        }
+    public void setupGameScene(String sceneName) {
+        currentLevelName = sceneName;
 
         gamePane = new Pane();
         Scene scene = new Scene(gamePane, 500, 500);
@@ -134,6 +132,8 @@ public class Controller {
         gamePane.requestFocus();
 
         startGameLoop();
+
+        System.out.println("Scene setup complete for: " + sceneName);
     }
 
     @FXML
@@ -169,20 +169,20 @@ public class Controller {
         localPlayerId = id;
     }
 
-    public void updateActorState(int actorId, String type, double x, double y)
+    public void updateActorState(int actorId, String type, double x, double y, double width, double height)
     {
         if (actorManager == null) {
             return;
         }
-        actorManager.createOrUpdateActor(actorId, type, x, y, (actorId == localPlayerId), gamePane);
+        actorManager.createOrUpdateActor(actorId, type, x, y, width, height, (actorId == localPlayerId), gamePane);
     }
 
-    public void addActorState(int actorId, String type, double x, double y) {
+    public void addActorState(int actorId, String type, double x, double y, double width, double height) {
         if (gamePane == null || actorManager == null) {
             return;
         }
 
-        actorManager.createOrUpdateActor(actorId, type, x, y, (actorId == localPlayerId), gamePane);
+        actorManager.createOrUpdateActor(actorId, type, x, y, width, height,(actorId == localPlayerId), gamePane);
     }
 
     public void removeActor(int actorId) {
