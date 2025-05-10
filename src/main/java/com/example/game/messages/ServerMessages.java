@@ -2,9 +2,20 @@ package com.example.game.messages;
 
 public class ServerMessages
 {
-    public final static String POSITION_UPDATE = "POSITION_UPDATE:";
-    public final static String PLAYER_ID = "PLAYER_ID:";
+    // Format: UPDATE_ACTOR:LevelName
+    public static final String  SET_GAME_SCENE = "SET_GAME_SCENE:";
 
-    public final static String HAS_GAME_CHANGED = "HAS_GAME_CHANGED";
-    public final static String LOAD_MAP = "LOAD_MAP";
+    // Format: UPDATE_ACTOR:actorId:type:x:y[:prop1:value1...]
+    public static final String UPDATE_ACTOR = "UPDATE_ACTOR:";
+
+    // Format: PLAYER_ID:playerId
+    public static final String PLAYER_ID = "PLAYER_ID:";
+
+    public static final String HAS_GAME_CHANGED = "HAS_GAME_CHANGED";
+
+    // Format: ADD_ACTOR:actorId:type:x:y[:prop1:value1...]
+    public static final String ADD_ACTOR = "ADD_ACTOR:";
+
+    // Format: REMOVE_ACTOR:actorId
+    public static final String REMOVE_ACTOR = "REMOVE_ACTOR:";
 }

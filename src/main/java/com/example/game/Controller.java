@@ -1,7 +1,9 @@
 package com.example.game;
 
+import com.example.game.actors.ActorManager;
+import com.example.game.actors.Player;
+import javafx.animation.AnimationTimer;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -10,15 +12,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Controller {
 
@@ -31,8 +28,9 @@ public class Controller {
     Button movingButton;
 
     private Pane gamePane;
-    private Map<Integer, Rectangle> playerRectangles = new HashMap<>();
-    private int localPlayerId = 0;
+    private int localPlayerId = -1;
+
+    private ActorManager actorManager;
 
     /*
         IT stores a server object, if you wonder why the fuck this is static it is because
@@ -44,6 +42,8 @@ public class Controller {
         Same idea as above — we store the main window statically so we don't have to fetch it all the time
     */
     static Stage mainStage;
+
+    private AnimationTimer gameLoop;
 
     public static void setMainStage(Stage stage) {
         mainStage = stage;
@@ -94,18 +94,46 @@ public class Controller {
         }
     }
 
-    public Controller loadMap() throws IOException
+    private void startGameLoop() {
+        if (gameLoop == null) {
+            gameLoop = new AnimationTimer() {
+                @Override
+                public void handle(long now) {
+                    if (actorManager != null) {
+                        actorManager.updateClient();
+                    }
+                }
+            };
+            gameLoop.start();
+        }
+    }
+
+    private void stopGameLoop() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+            gameLoop = null;
+        }
+    }
+
+    public void setupGameScene()
     {
+        if (gamePane != null) {
+            return;
+        }
+
         gamePane = new Pane();
         Scene scene = new Scene(gamePane, 500, 500);
 
         scene.setOnKeyPressed(this::handleKeyEvent);
 
+        actorManager = new ActorManager(gamePane);
+
         mainStage.setScene(scene);
         mainStage.show();
 
         gamePane.requestFocus();
-        return this;
+
+        startGameLoop();
     }
 
     @FXML
@@ -125,13 +153,15 @@ public class Controller {
                 case RIGHT:
                     msg = "MOVE_RIGHT";
                     break;
+                default:
+                    return;
             }
 
-            if (msg != null) {
+            if (msg != null && Main.currentClient != null) {
                 Main.currentClient.addPendingCommand(msg);
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            System.err.println("Error handling key event: " + e.getMessage());
         }
     }
 
@@ -139,33 +169,30 @@ public class Controller {
         localPlayerId = id;
     }
 
-    public int getLocalPlayerId() {
-        return localPlayerId;
+    public void updateActorState(int actorId, String type, double x, double y)
+    {
+        if (actorManager == null) {
+            return;
+        }
+        actorManager.createOrUpdateActor(actorId, type, x, y, (actorId == localPlayerId), gamePane);
     }
 
-    private Color GetPlayerColor(int playerId)
-    {
-        if(playerId == localPlayerId)
-        {
-            return Color.GREEN;
+    public void addActorState(int actorId, String type, double x, double y) {
+        if (gamePane == null || actorManager == null) {
+            return;
         }
-        return Color.RED;
+
+        actorManager.createOrUpdateActor(actorId, type, x, y, (actorId == localPlayerId), gamePane);
     }
 
-    public void updatePlayerPosition(int playerId, double x, double y)
-    {
-        Rectangle playerRect = playerRectangles.get(playerId);
-
-        if (playerRect == null)
-        {
-            Color playerColor = GetPlayerColor(playerId);
-            playerRect = new Rectangle(50, 50, playerColor);
-
-            playerRectangles.put(playerId, playerRect);
-            gamePane.getChildren().add(playerRect);
+    public void removeActor(int actorId) {
+        if (actorManager == null || gamePane == null) {
+            return;
         }
+        actorManager.removeActor(actorId, gamePane);
+    }
 
-        playerRect.setX(x);
-        playerRect.setY(y);
+    public Pane getGamePane() {
+        return gamePane;
     }
 }

@@ -1,28 +1,34 @@
 package com.example.game;
-import  com.example.game.messages.ClientMessages;
-import  com.example.game.messages.ServerMessages;
+import com.example.game.messages.ServerMessages;
+import com.example.game.actors.ActorManager;
+import com.example.game.actors.Actor;
+import com.example.game.actors.Player;
+
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.net.SocketTimeoutException;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server implements Runnable{
     private ServerSocket socket;
     private List<Socket> connectedClients;
-    private boolean gameHasStarted = false;
-    private int port;
-    private String hostname;
+    private volatile boolean gameHasStarted = false;
+    private final int port;
+    private final String hostname;
 
-    private Map<Integer, double[]> playerPositions;
+    private ActorManager actorManager;
+
     private int nextPlayerId = 0;
 
+    private ConcurrentLinkedQueue<ClientCommand> commandQueue = new ConcurrentLinkedQueue<>();
+
     //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
-    private int polingInterval = 50;
+    private final int polingInterval  = 50;
 
     public int getPort(){
         return this.port;
@@ -32,31 +38,48 @@ public class Server implements Runnable{
     }
 
     public Server(String hostname,int port) throws IOException, ClassNotFoundException {
-        System.out.println("I AM THE SERVER!");
+        System.out.println("SERVER: I AM THE SERVER!");
         this.port = port;
         this.hostname = hostname;
-        this.socket = new ServerSocket(port, 0, InetAddress.ofLiteral(hostname));
+        this.socket = new ServerSocket(port, 50, InetAddress.ofLiteral(hostname));
         this.connectedClients = new CopyOnWriteArrayList<>();
-        this.playerPositions = new ConcurrentHashMap<>();
+        this.actorManager = new ActorManager();
     }
 
     public void startGame()
     {
+        System.out.println("SERVER: Game starting...");
         this.gameHasStarted = true;
     }
 
-    private void broadcastPositions() throws IOException
+    private void broadcastActorStates() throws IOException
     {
-        if (playerPositions.isEmpty()) return;
+        List<Actor> actorSnapshot = new ArrayList<>(actorManager.actorsById.values());
 
-        for (Map.Entry<Integer, double[]> entry : playerPositions.entrySet())
+        if (actorSnapshot.isEmpty()) return;
+
+        List<String> updateMessages = new ArrayList<>();
+        for (Actor actor : actorSnapshot)
         {
-            int playerId = entry.getKey();
-            double[] pos = entry.getValue();
-
-            String posMsg = String.format(java.util.Locale.US, ServerMessages.POSITION_UPDATE + "%d:%.2f:%.2f", playerId, pos[0], pos[1]);
-            broadcastMessage(posMsg);
+            String msg = String.format(java.util.Locale.US, ServerMessages.UPDATE_ACTOR + "%d:%s:%.2f:%.2f",
+                    actor.getId(), actor.getType(), actor.getX(), actor.getY());
+            updateMessages.add(msg);
         }
+
+        for (String msg : updateMessages) {
+            broadcastMessage(msg);
+        }
+    }
+
+    private void broadcastAddActor(Actor actor) throws IOException {
+        String msg = String.format(java.util.Locale.US, ServerMessages.ADD_ACTOR + "%d:%s:%.2f:%.2f",
+                actor.getId(), actor.getType(), actor.getX(), actor.getY());
+        broadcastMessage(msg);
+    }
+
+    private void broadcastRemoveActor(int actorId) throws IOException {
+        String msg = ServerMessages.REMOVE_ACTOR + actorId;
+        broadcastMessage(msg);
     }
 
     /**
@@ -64,7 +87,9 @@ public class Server implements Runnable{
      * with previously connected sockets.
      * */
     public void stopListeningForIncomingConnections() throws IOException {
-        socket.close();
+        if (socket != null && !socket.isClosed()) {
+            socket.close();
+        }
     }
 
     /**
@@ -76,124 +101,174 @@ public class Server implements Runnable{
         {
             DataOutputStream out = new DataOutputStream(connectedClient.getOutputStream());
             out.writeUTF(msg);
+            out.flush();
         }
     }
 
-    public void broadcastMessageToClient(String msg, Socket clientSocket)
-    {
-        if(clientSocket == null || clientSocket.isClosed()) return;
+    public void broadcastMessageToClient(String msg, Socket clientSocket) {
+        if (clientSocket == null || clientSocket.isClosed()) {
+            removeClient(clientSocket);
+            return;
+        }
         try {
             DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
             out.writeUTF(msg);
+            out.flush();
+        } catch (IOException e) {
+            removeClient(clientSocket);
+        }
+    }
+
+    private void removeClient(Socket clientSocket) {
+        if (connectedClients.remove(clientSocket)) {
+            System.out.println("SERVER: Client disconnected: " + clientSocket.getRemoteSocketAddress());
+        }
+        try { clientSocket.close(); } catch (IOException e) { /* ignore */ }
+    }
+
+
+    @Override
+    public void run() {
+        while (!gameHasStarted) {
+            try {
+                Socket clientSocket = socket.accept();
+                System.out.println("SERVER: Client connected from " + clientSocket.getRemoteSocketAddress());
+
+                int playerId = nextPlayerId++;
+                connectedClients.add(clientSocket);
+                Player newPlayer = actorManager.createPlayer(playerId, 100.0 + (playerId * 60), 100.0);
+
+                ClientHandler clientHandler = new ClientHandler(clientSocket, playerId, commandQueue);
+                clientHandler.start();
+
+                broadcastMessageToClient(ServerMessages.PLAYER_ID + playerId, clientSocket);
+
+            }
+            // TODO: I DO NOT KNOW BUT WITHOUT THIS IT DOESN'T WORK
+            catch (SocketTimeoutException e) {
+            } catch (IOException e) {
+                if (!socket.isClosed()) {
+                    System.err.println("SERVER: Error accepting client connection: " + e.getMessage());
+                } else {
+                    System.out.println("SERVER: Server socket closed, stopping accept loop.");
+                }
+            } catch (ClassNotFoundException e) {
+                System.err.println("SERVER: Error creating ClientHandler: " + e.getMessage());
+            }
+        }
+
+        try {
+            if(gameHasStarted)
+            {
+                broadcastMessage(ServerMessages.SET_GAME_SCENE + "Level1");
+                broadcastActorStates();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        long lastTickTime = System.currentTimeMillis();
+
+        while (gameHasStarted) {
+            long now = System.currentTimeMillis();
+            long elapsedTime = now - lastTickTime;
+
+            if (elapsedTime >= polingInterval) {
+                lastTickTime = now;
+
+                processClientCommands();
+
+                actorManager.updateServer();
+
+                try {
+                    broadcastActorStates();
+                    broadcastMessage(ServerMessages.HAS_GAME_CHANGED);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+            else {
+                try {
+                    long sleepTime = polingInterval - elapsedTime;
+                    if (sleepTime > 0) {
+                        Thread.sleep(sleepTime);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+
+        for (Socket clientSocket : new ArrayList<>(connectedClients)) {
+            try {
+                clientSocket.close();
+            } catch (IOException e) { /* ignore */ }
+        }
+        connectedClients.clear();
+        commandQueue.clear();
+        actorManager = new ActorManager();
+
+        try {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void waitForClients(ServerSocket socket) {
-        //It's listening for incoming connection, it stops running when gameHasStarted
-        while (!gameHasStarted && !socket.isClosed()) {
-            if (gameHasStarted) break;
-
-            Socket clientSocket = null;
-            try {
-                clientSocket = socket.accept();
-                System.out.println("SERVER: Client connected from " + clientSocket.getRemoteSocketAddress());
-
-                int playerId = nextPlayerId++;
-                connectedClients.add(clientSocket);
-                playerPositions.put(playerId, new double[]{100.0 + (playerId * 60), 100.0});
-
-                broadcastMessageToClient(ServerMessages.PLAYER_ID + playerId, clientSocket);
-
-                ClientHandler clientHandler = new ClientHandler(clientSocket, playerId);
-                clientHandler.start();
-
-            } catch (IOException | ClassNotFoundException e) {
-                System.out.println("It throws an exception,however it might be due to the fact that serverSocket was closed");
+    private void processClientCommands() {
+        ClientCommand command;
+        while ((command = commandQueue.poll()) != null) {
+            Player player = actorManager.getPlayer(command.playerId);
+            if (player != null) {
+                player.move(command.commandString);
             }
         }
     }
 
-    @Override
-    public void run() {
+    private static class ClientCommand {
+        int playerId;
+        String commandString;
 
-        waitForClients(socket);
-
-        if(gameHasStarted)
-        {
-            try {
-                Thread.sleep(100);
-                broadcastMessage(ServerMessages.LOAD_MAP);
-            } catch (Exception e) {
-                System.out.println("Problem with loading a map!");
-            }
+        ClientCommand(int playerId, String commandString) {
+            this.playerId = playerId;
+            this.commandString = commandString;
         }
-
-        while (gameHasStarted)
-        {
-            try
-            {
-                Thread.sleep(polingInterval);
-                broadcastPositions();
-                broadcastMessage(ServerMessages.HAS_GAME_CHANGED);
-            }
-            catch (InterruptedException | IOException e)
-            {
-                gameHasStarted = false;
-                Thread.currentThread().interrupt();
-            }
-        }
-
-        for (Socket clientSocket : connectedClients) {
-            try {
-                clientSocket.close();
-            } catch (IOException e) { /* ignore */ }
-        }
-
-        connectedClients.clear();
-        playerPositions.clear();
     }
 
-    private class ClientHandler extends Thread{
+    private class ClientHandler extends Thread {
         private Socket socket;
         private int playerId;
+        private DataInputStream in;
+        private ConcurrentLinkedQueue<ClientCommand> sharedCommandQueue;
 
-        public ClientHandler(Socket socket, int playerId) throws IOException, ClassNotFoundException {
+
+        public ClientHandler(Socket socket, int playerId, ConcurrentLinkedQueue<ClientCommand> commandQueue) throws IOException, ClassNotFoundException {
             this.socket = socket;
             this.playerId = playerId;
-            System.out.println("SERVER: New user has connected with ID: " + playerId);
+            this.sharedCommandQueue = commandQueue;
+            this.in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
         }
 
         @Override
-        public void run()
-        {
-            try (DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()))) {
-                while(socket.isConnected()){
+        public void run() {
+            try {
+                while (socket.isConnected()) {
                     String message = in.readUTF();
+                    System.out.println("SERVER: Received from player " + playerId + ": " + message);
 
-                    double[] pos = playerPositions.get(playerId);
-                    final double moveAmount = 10.0;
-
-                    switch (message) {
-                        case ClientMessages.MOVE_UP:
-                            pos[1] -= moveAmount;
-                            break;
-                        case ClientMessages.MOVE_DOWN:
-                            pos[1] += moveAmount;
-                            break;
-                        case ClientMessages.MOVE_RIGHT:
-                            pos[0] += moveAmount;
-                            break;
-                        case ClientMessages.MOVE_LEFT:
-                            pos[0] -= moveAmount;
-                            break;
-                        default:
-                            break;
-                    }
+                    sharedCommandQueue.offer(new ClientCommand(playerId, message));
                 }
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 throw new RuntimeException(e);
+            }
+            finally {
+                try { if (in != null) in.close(); } catch (IOException e) {}
+                try { if (socket != null && !socket.isClosed()) socket.close(); } catch (IOException e) {}
+                connectedClients.remove(socket);
             }
         }
     }

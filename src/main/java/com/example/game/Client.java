@@ -1,12 +1,10 @@
 package com.example.game;
+import com.example.game.actors.ActorManager;
 import com.example.game.messages.ServerMessages;
 
 import javafx.application.Platform;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -52,34 +50,68 @@ public class Client{
 
     private class ClientReceiver implements Runnable {
 
-        void handleLoadMap(String msg)
-        {
-            Platform.runLater(() -> {
-                try {
-                    controller = controller.loadMap();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        }
-
-        void handlePositionUpdate(String msg)
+        void handleSetScene(String msg)
         {
             String[] parts = msg.split(":");
-            if (parts.length == 4) {
-                try {
-                    final int pid = Integer.parseInt(parts[1]);
+            if(parts.length >= 2)
+            {
+                Platform.runLater(() -> {
+                    controller.setupGameScene();
+                });
+            }
+        }
 
-                    String xStr = parts[2];
-                    String yStr = parts[3];
-                    final double x = Double.parseDouble(xStr);
-                    final double y = Double.parseDouble(yStr);
+        void handleActorUpdate(String msg)
+        {
+            String[] parts = msg.split(":");
+            if (parts.length >= 5) {
+                try {
+                    final int actorId = Integer.parseInt(parts[1]);
+                    final String actorType = parts[2];
+                    final double x = Double.parseDouble(parts[3]);
+                    final double y = Double.parseDouble(parts[4]);
 
                     Platform.runLater(() -> {
-                        controller.updatePlayerPosition(pid, x, y);
+                        controller.updateActorState(actorId, actorType, x, y);
                     });
                 } catch (NumberFormatException e) {
-                    System.err.println("Invalid position update format: " + msg);
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        void handleAddActor(String msg)
+        {
+            String[] parts = msg.split(":");
+            if (parts.length >= 5) {
+                try {
+                    final int actorId = Integer.parseInt(parts[1]);
+                    final String actorType = parts[2];
+                    final double x = Double.parseDouble(parts[3]);
+                    final double y = Double.parseDouble(parts[4]);
+
+                    Platform.runLater(() -> {
+                        controller.addActorState(actorId, actorType, x, y);
+                    });
+
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        void handleRemoveActor(String msg) {
+            String[] parts = msg.split(":");
+            if (parts.length == 2) {
+                try {
+                    final int actorId = Integer.parseInt(parts[1]);
+
+                    Platform.runLater(() -> {
+                        controller.removeActor(actorId);
+                    });
+
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException(e);
                 }
             }
         }
@@ -92,26 +124,29 @@ public class Client{
                     playerId = Integer.parseInt(parts[1]);
                     Platform.runLater(() -> {
                         controller.setLocalPlayerId(playerId);
+                        System.out.println("CLIENT: received player ID: " + playerId);
                     });
                 } catch (NumberFormatException e) {
-                    System.err.println("Invalid player ID format: " + msg);
+                    throw new RuntimeException(e);
                 }
             }
         }
 
         void handleGameHasChanged(String msg)
         {
-            if (!pendingCommands.isEmpty())
-            {
-                for (String command : pendingCommands)
+            if (msg.equals(ServerMessages.HAS_GAME_CHANGED)) {
+                if (!pendingCommands.isEmpty())
                 {
-                    try {
-                        sendDataToServer(command);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                    for (String command : new HashSet<>(pendingCommands))
+                    {
+                        try {
+                            sendDataToServer(command);
+                            pendingCommands.remove(command);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
-                pendingCommands.clear();
             }
         }
 
@@ -121,33 +156,34 @@ public class Client{
          * @param msg content of the message inside the request
          */
         private void handleSocketMessage(String msg) throws IOException {
-            if (Objects.equals(msg, ServerMessages.LOAD_MAP)) {
-                handleLoadMap(msg);
-            }
-
-            if (msg.startsWith(ServerMessages.POSITION_UPDATE)) {
-                handlePositionUpdate(msg);
-            }
-
-            if (msg.startsWith(ServerMessages.PLAYER_ID)) {
+            if (msg.startsWith(ServerMessages.SET_GAME_SCENE)) {
+                handleSetScene(msg);
+            } else if (msg.startsWith(ServerMessages.PLAYER_ID)) {
                 handlePlayerID(msg);
-            }
-
-            if (Objects.equals(msg, ServerMessages.HAS_GAME_CHANGED)) {
+            } else if (msg.startsWith(ServerMessages.ADD_ACTOR)) {
+                handleAddActor(msg);
+            } else if (msg.startsWith(ServerMessages.REMOVE_ACTOR)) {
+                handleRemoveActor(msg);
+            } else if (msg.startsWith(ServerMessages.UPDATE_ACTOR)) {
+                handleActorUpdate(msg);
+            } else if (msg.equals(ServerMessages.HAS_GAME_CHANGED)) {
                 handleGameHasChanged(msg);
             }
         }
 
         @Override
         public void run() {
-            System.out.println("Client has started working");
-            while (!clientSocket.isClosed()) {
-                try {
+            try {
+                while (!clientSocket.isClosed()) {
                     String msg = in.readUTF();
                     handleSocketMessage(msg);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
                 }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } finally {
+                try { if (in != null) in.close(); } catch (IOException e) {}
+                try { if (out != null) out.close(); } catch (IOException e) {}
+                try { if (clientSocket != null && !clientSocket.isClosed()) clientSocket.close(); } catch (IOException e) {}
             }
         }
     }
