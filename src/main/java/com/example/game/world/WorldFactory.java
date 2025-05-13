@@ -6,8 +6,7 @@ import com.example.game.actors.ActorManager;
 public class WorldFactory
 {
     public static World createWorld(String worldName) {
-        ActorManager actorManager = new ActorManager();
-        World world = new World(worldName, actorManager);
+        World world = new World(worldName);
 
         switch (worldName) {
             case "Level1":

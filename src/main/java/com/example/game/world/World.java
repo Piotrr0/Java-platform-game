@@ -6,12 +6,12 @@ import java.util.Map;
 
 public class World {
     private final String worldName;
-    private final ActorManager actorManager; // TODO: Consider making
+    private final ActorManager actorManager;
 
-    public World(String worldName, ActorManager actorManager)
+    public World(String worldName)
     {
         this.worldName = worldName;
-        this.actorManager = actorManager;
+        this.actorManager = new ActorManager();
     }
 
     public String getWorldName() { return worldName; }
