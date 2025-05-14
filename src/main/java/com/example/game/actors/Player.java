@@ -21,6 +21,7 @@ public class Player extends Actor {
         super(playerId, x, y, 50, 50, isLocalPlayer ? Color.GREEN : Color.RED);
         this.type = "Player";
         this.playerId = playerId;
+        this.isLocalPlayer = isLocalPlayer;
     }
 
     public Integer getPlayerId() { return  playerId; }
@@ -30,21 +31,24 @@ public class Player extends Actor {
 
     // Server-side method to apply movement based on command
     public void move(String command) {
+        double deltaX = 0;
+        double deltaY = 0;
         switch (command) {
             case "MOVE_UP":
-                this.y -= moveAmount;
+                deltaY -= moveAmount;
                 break;
             case "MOVE_DOWN":
-                this.y += moveAmount;
+                deltaY += moveAmount;
                 break;
             case "MOVE_RIGHT":
-                this.x += moveAmount;
+                deltaX += moveAmount;
                 break;
             case "MOVE_LEFT":
-                this.x -= moveAmount;
+                deltaX -= moveAmount;
                 break;
             default:
                 break;
         }
+        setMovement(deltaX, deltaY);
     }
 }

@@ -3,6 +3,9 @@ package com.example.game.actors;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
 import javafx.scene.layout.Pane;
+import javafx.geometry.Rectangle2D;
+
+import java.util.List;
 
 public class Actor
 {
@@ -14,6 +17,9 @@ public class Actor
     protected double y;
     protected double width;
     protected double height;
+
+    protected double dx = 0;
+    protected double dy = 0;
 
     protected Pane parentPane;
     protected Rectangle graphicalRepresentation;
@@ -63,11 +69,13 @@ public class Actor
         if (graphicalRepresentation != null) {
             graphicalRepresentation.setX(x);
             graphicalRepresentation.setY(y);
+            graphicalRepresentation.setWidth(width);
+            graphicalRepresentation.setHeight(height);
         }
     }
 
     // Client-side update method, primarily for graphical state based on current x/y
-    public void update()
+    public void updateClient()
     {
         updateGraphicalRepresentation();
     }
@@ -88,15 +96,59 @@ public class Actor
         if (!this.collidable || !other.collidable) {
             return false;
         }
-
-        return this.x < other.x + other.width &&
-                this.x + this.width > other.x &&
-                this.y < other.y + other.height &&
-                this.y + this.height > other.y;
+        return getBounds().intersects(other.getBounds());
     }
 
     // Server-side
     public void handleCollision(Actor other) { System.out.println("Collision occurred: " + other.id); };
+
+    public Rectangle2D getBounds() {
+        return new Rectangle2D(x, y, width, height);
+    }
+
+    public Rectangle2D getProposedBounds() {
+        return new Rectangle2D(x + dx, y + dy, width, height);
+    }
+
+    public void setMovement(double deltaX, double deltaY) {
+        this.dx = deltaX;
+        this.dy = deltaY;
+    }
+
+    public void updateServer(ActorManager manager) {
+        if (dx == 0 && dy == 0) {
+            return;
+        }
+
+        double proposedX = x + dx;
+        double proposedY = y + dy;
+        Rectangle2D proposedBounds = new Rectangle2D(proposedX, proposedY, width, height);
+
+        boolean collisionDetected = false;
+        List<Actor> allActors = manager.getAllActorsServer();
+
+        if (allActors != null) {
+            for (Actor otherActor : allActors) {
+                if (otherActor.getId() == this.getId() || !otherActor.isCollidable()) {
+                    continue;
+                }
+
+                if (proposedBounds.intersects(otherActor.getBounds())) {
+                    collisionDetected = true;
+                    handleCollision(otherActor);
+                    break;
+                }
+            }
+        }
+
+        if (!collisionDetected) {
+            this.x = proposedX;
+            this.y = proposedY;
+        }
+
+        dx = 0;
+        dy = 0;
+    }
 
     public int getId() { return id; }
     public String getType() { return type; }
@@ -106,5 +158,6 @@ public class Actor
     public double getWidth() { return width; }
     public double getHeight() { return height; }
     public boolean isCollidable() { return collidable; }
-
+    public double getDx() { return dx; }
+    public double getDy() { return dy; }
 }

@@ -2,6 +2,7 @@ package com.example.game.actors;
 
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.geometry.Rectangle2D;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,29 +96,15 @@ public class ActorManager {
         }
 
         for (Actor actor : actors) {
-            actor.update();
+            actor.updateServer(this);
         }
+    }
 
-        // TODO: Optimize this
-        // This code sucks but works at least - Needs server-side implementation
-        // Server-side collision detection and handling
-
-        List<Actor> currentActors = actors;
-        for (int i = 0; i < currentActors.size(); i++) {
-            Actor actor1 = currentActors.get(i);
-            if (!actor1.isCollidable()) continue;
-
-            for (int j = i + 1; j < currentActors.size(); j++) {
-                Actor actor2 = currentActors.get(j);
-                if (!actor2.isCollidable()) continue;
-
-                if (actor1.collidesWith(actor2))
-                {
-                    actor1.handleCollision(actor2);
-                    actor2.handleCollision(actor1);
-                }
-            }
+    public List<Actor> getAllActorsServer() {
+        if (!isServer) {
+            return null;
         }
+        return new ArrayList<>(actors);
     }
 
     public void updateClient()
@@ -129,7 +116,7 @@ public class ActorManager {
 
         for (Actor actor : actors)
         {
-            actor.update();
+            actor.updateClient();
         }
     }
 
