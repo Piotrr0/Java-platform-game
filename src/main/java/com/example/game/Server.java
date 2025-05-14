@@ -32,7 +32,7 @@ public class Server implements Runnable{
     private ConcurrentLinkedQueue<ClientCommand> commandQueue = new ConcurrentLinkedQueue<>();
 
     //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
-    private final int polingInterval  = 50;
+    private final int polingInterval  = 30;
 
     public int getPort(){
         return this.port;

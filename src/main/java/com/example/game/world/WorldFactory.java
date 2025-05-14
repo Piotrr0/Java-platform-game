@@ -33,7 +33,7 @@ public class WorldFactory
         Actor obstacle1 = new Actor(1001, 150, 150, 50, 50);
         actorManager.addActor(obstacle1);
 
-        Actor obstacle2 = new Actor(1002, 300, 300, 125, 75);
+        Actor obstacle2 = new Actor(1002, 0, 300, 1000, 75);
         actorManager.addActor(obstacle2);
     }
 }

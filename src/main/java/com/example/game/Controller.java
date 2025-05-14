@@ -123,6 +123,7 @@ public class Controller {
         Scene scene = new Scene(gamePane, 500, 500);
 
         scene.setOnKeyPressed(this::handleKeyEvent);
+        scene.setOnKeyReleased(this::handleKeyEventReleased);
 
         actorManager = new ActorManager(gamePane);
 
@@ -156,6 +157,23 @@ public class Controller {
                 default:
                     return;
             }
+
+            if (msg != null && Main.currentClient != null) {
+                Main.currentClient.addPendingCommand(msg);
+            }
+        } catch (Exception e) {
+            System.err.println("Error handling key event: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    private void handleKeyEventReleased(KeyEvent event) {
+        try {
+            String msg = switch (event.getCode()) {
+                case LEFT -> "STOP_LEFT";
+                case RIGHT -> "STOP_RIGHT";
+                default -> null;
+            };
 
             if (msg != null && Main.currentClient != null) {
                 Main.currentClient.addPendingCommand(msg);

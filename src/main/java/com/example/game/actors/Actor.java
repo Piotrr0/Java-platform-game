@@ -10,6 +10,7 @@ import java.util.List;
 public class Actor
 {
     //TODO: NOW ID IS MANUAL FOR STATIC OBJECT AND AUTOMATIC FOR PLAYER. MAKE SURE IT IS ALSO AUTMATIC FOR ACTORS
+    //TODO: Add Vector2D class for easier computing location and velocity
     protected int id = -1;
     protected String type = "Actor";
 
@@ -18,14 +19,17 @@ public class Actor
     protected double width;
     protected double height;
 
-    protected double dx = 0;
-    protected double dy = 0;
+    protected double velocityX = 0;
+    protected double velocityY = 0;
+
+    protected static final double GRAVITY = 0.5;
+    protected boolean affectedByGravity = false;
+    protected boolean collidable = true;
 
     protected Pane parentPane;
     protected Rectangle graphicalRepresentation;
     protected Color color;
 
-    protected boolean collidable = true;
 
     // Constructor for server-side actors (no graphics needed initially)
     public Actor(int id, double x, double y, double width, double height)
@@ -38,7 +42,7 @@ public class Actor
     }
 
     // Constructor for client-side actors, used when creating/updating based on server state
-    public Actor(int id, double x, double y, double width, double height, Color color) // Client-side constructor
+    public Actor(int id, double x, double y, double width, double height, Color color)
     {
         this(id, x, y, width, height);
         this.color = color;
@@ -69,8 +73,6 @@ public class Actor
         if (graphicalRepresentation != null) {
             graphicalRepresentation.setX(x);
             graphicalRepresentation.setY(y);
-            graphicalRepresentation.setWidth(width);
-            graphicalRepresentation.setHeight(height);
         }
     }
 
@@ -89,6 +91,10 @@ public class Actor
     public void setScale(double width, double height) {
         this.width = width;
         this.height = height;
+        if (graphicalRepresentation != null) {
+            graphicalRepresentation.setWidth(width);
+            graphicalRepresentation.setHeight(height);
+        }
     }
 
     // Server-side collision check
@@ -106,48 +112,106 @@ public class Actor
         return new Rectangle2D(x, y, width, height);
     }
 
-    public Rectangle2D getProposedBounds() {
-        return new Rectangle2D(x + dx, y + dy, width, height);
+    public void addVelocity(double vx, double vy) {
+        this.velocityX += vx;
+        this.velocityY += vy;
     }
 
-    public void setMovement(double deltaX, double deltaY) {
-        this.dx = deltaX;
-        this.dy = deltaY;
+    public void setVelocity(double vx, double vy) {
+        this.velocityX = vx;
+        this.velocityY = vy;
+    }
+
+    public void setVelocityX(double vx) {
+        this.velocityX = vx;
+    }
+
+    public void setVelocityY(double vy) {
+        this.velocityY = vy;
+    }
+
+    protected void applyGravity(){
+        if (affectedByGravity) {
+            velocityY += GRAVITY;
+        }
+    }
+
+    protected void handleVerticalCollision(List<Actor> actorsToCheck)
+    {
+        double proposedY = y + velocityY;
+
+        if (velocityY != 0) {
+            Rectangle2D verticalProposedBounds = new Rectangle2D(x, proposedY, width, height);
+            if (actorsToCheck != null) {
+                for (Actor otherActor : actorsToCheck) {
+                    if (otherActor.getId() == this.getId() || !otherActor.isCollidable()) {
+                        continue;
+                    }
+
+                    if (verticalProposedBounds.intersects(otherActor.getBounds())) {
+                        proposedY = computeVerticalCollisionY(otherActor.getBounds());
+                        velocityY = 0;
+                        break;
+                    }
+                }
+            }
+            this.y = proposedY;
+        }
+    }
+
+    protected void handleHorizontalCollision(List<Actor> actorsToCheck)
+    {
+        double proposedX = x + velocityX;
+
+        if (velocityX != 0) {
+            Rectangle2D horizontalProposedBounds = new Rectangle2D(proposedX, y, width, height); // Use potentially adjusted y
+
+            if (actorsToCheck != null) {
+                for (Actor otherActor : actorsToCheck) {
+                    if (otherActor.getId() == this.getId() || !otherActor.isCollidable()) {
+                        continue;
+                    }
+
+                    if (horizontalProposedBounds.intersects(otherActor.getBounds())) {
+                        proposedX = computeHorizontalCollisionX(otherActor.getBounds());
+                        velocityX = 0;
+                        break;
+                    }
+                }
+            }
+            this.x = proposedX;
+        }
     }
 
     public void updateServer(ActorManager manager) {
-        if (dx == 0 && dy == 0) {
-            return;
-        }
+        applyGravity();
 
-        double proposedX = x + dx;
-        double proposedY = y + dy;
-        Rectangle2D proposedBounds = new Rectangle2D(proposedX, proposedY, width, height);
-
-        boolean collisionDetected = false;
         List<Actor> allActors = manager.getAllActorsServer();
 
-        if (allActors != null) {
-            for (Actor otherActor : allActors) {
-                if (otherActor.getId() == this.getId() || !otherActor.isCollidable()) {
-                    continue;
-                }
+        handleVerticalCollision(allActors);
+        handleHorizontalCollision(allActors);
+    }
 
-                if (proposedBounds.intersects(otherActor.getBounds())) {
-                    collisionDetected = true;
-                    handleCollision(otherActor);
-                    break;
-                }
-            }
+    protected double computeVerticalCollisionY(Rectangle2D obstacle) {
+        if (velocityY > 0) {
+            // landing on top
+            return obstacle.getMinY() - height;
+        } else if (velocityY < 0) {
+            // hitting head
+            return obstacle.getMaxY();
         }
+        return y;
+    }
 
-        if (!collisionDetected) {
-            this.x = proposedX;
-            this.y = proposedY;
+    protected double computeHorizontalCollisionX(Rectangle2D obstacle) {
+        if (velocityX > 0) {
+            // hitting rightward obstacle
+            return obstacle.getMinX() - width;
+        } else if (velocityX < 0) {
+            // hitting leftward obstacle
+            return obstacle.getMaxX();
         }
-
-        dx = 0;
-        dy = 0;
+        return x;
     }
 
     public int getId() { return id; }
@@ -158,6 +222,14 @@ public class Actor
     public double getWidth() { return width; }
     public double getHeight() { return height; }
     public boolean isCollidable() { return collidable; }
-    public double getDx() { return dx; }
-    public double getDy() { return dy; }
+    public double getVelocityX() { return velocityX; }
+    public double getVelocityY() { return velocityY; }
+
+    public boolean isAffectedByGravity() {
+        return affectedByGravity;
+    }
+
+    public void setAffectedByGravity(boolean affectedByGravity) {
+        this.affectedByGravity = affectedByGravity;
+    }
 }
