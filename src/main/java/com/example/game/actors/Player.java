@@ -29,11 +29,25 @@ public class Player extends Actor {
 
     public Integer getPlayerId() { return  playerId; }
 
+    @Override
+    public void handleCollision(Actor other) {
+        super.handleCollision(other);
+
+        // For demonstration how it works, I do not find it it useful
+        if (other instanceof Player)
+        {
+            if (this.x < other.getX()) {
+                other.x += 1;
+            }
+            else {
+                other.x -= 1;
+            }
+        }
+    }
+
     // Server-side method to apply movement based on command
     public void move(String command)
     {
-        setVelocityX(0);
-
         switch (command) {
             case "MOVE_UP":
                 if (Math.abs(velocityY) < 0.1) {

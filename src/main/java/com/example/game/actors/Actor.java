@@ -149,6 +149,7 @@ public class Actor
                     }
 
                     if (verticalProposedBounds.intersects(otherActor.getBounds())) {
+                        handleCollision(otherActor);
                         proposedY = computeVerticalCollisionY(otherActor.getBounds());
                         velocityY = 0;
                         break;
@@ -173,6 +174,7 @@ public class Actor
                     }
 
                     if (horizontalProposedBounds.intersects(otherActor.getBounds())) {
+                        handleCollision(otherActor);
                         proposedX = computeHorizontalCollisionX(otherActor.getBounds());
                         velocityX = 0;
                         break;
