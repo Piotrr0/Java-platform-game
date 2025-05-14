@@ -5,7 +5,6 @@ public class ServerMessages
     // Format: UPDATE_ACTOR:LevelName
     public static final String  SET_GAME_SCENE = "SET_GAME_SCENE:";
 
-    // Format: UPDATE_ACTOR:actorId:type:x:y:width:height:[:prop1:value1...]
     public static final String UPDATE_ACTOR = "UPDATE_ACTOR:";
 
     // Format: PLAYER_ID:playerId

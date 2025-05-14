@@ -1,7 +1,11 @@
 package com.example.game;
 
+import com.example.game.actors.Actor;
 import com.example.game.actors.ActorManager;
 import com.example.game.actors.Player;
+import com.example.game.network.ReplicationUtil;
+import com.example.game.world.World;
+import com.example.game.world.WorldFactory;
 import javafx.animation.AnimationTimer;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -12,10 +16,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Map;
 
 public class Controller {
 
@@ -82,14 +88,12 @@ public class Controller {
         mainStage.setScene(new Scene(root));
     }
 
-    public void handleStartButton(ActionEvent actionEvent) throws IOException, ClassNotFoundException {
+    public void handleStartButton(ActionEvent actionEvent) throws IOException, ClassNotFoundException, InterruptedException {
         System.out.println("Host wants to start a game");
         if (server != null) {
-            //WHEN WE START we also want
+            server.finalizeGameSetupAndStart();
             Main.currentClient = new Client(server.getHostname(), server.getPort(), this);
-            server.stopListeningForIncomingConnections(); // This should close serverSocket
-            server.startGame(); // This changes server's state
-
+            server.stopListeningForIncomingConnections();
         } else {
             System.out.println("server is null :/");
         }
@@ -117,8 +121,6 @@ public class Controller {
     }
 
     public void setupGameScene(String sceneName) {
-        currentLevelName = sceneName;
-
         gamePane = new Pane();
         Scene scene = new Scene(gamePane, 500, 500);
 
@@ -184,33 +186,52 @@ public class Controller {
     }
 
     public void setLocalPlayerId(int id) {
-        localPlayerId = id;
+        this.localPlayerId = id;
     }
 
-    public void updateActorState(int actorId, String type, double x, double y, double width, double height)
-    {
-        if (actorManager == null) {
-            return;
-        }
-        actorManager.createOrUpdateActor(actorId, type, x, y, width, height, (actorId == localPlayerId), gamePane);
-    }
-
-    public void addActorState(int actorId, String type, double x, double y, double width, double height) {
-        if (gamePane == null || actorManager == null) {
+    public void addActorFromServer(int actorId, String actorType, String serializedState) {
+        if (actorManager != null && actorManager.getActor(actorId) != null) {
+            updateActorStateFromServer(actorId, actorType, serializedState);
             return;
         }
 
-        actorManager.createOrUpdateActor(actorId, type, x, y, width, height,(actorId == localPlayerId), gamePane);
+        Actor actor;
+        boolean isLocal = (actorId == localPlayerId);
+        if ("Player".equals(actorType)) {
+            actor = new Player(actorId, 0, 0, isLocal);
+        } else {
+            actor = new Actor(actorId, 0, 0, 10, 10, Color.GREY);
+        }
+
+        Map<String, String> stateData = ReplicationUtil.deserializeStateMap(serializedState);
+        ReplicationUtil.applyReplicatedState(actor, stateData);
+
+        if (actor != null && gamePane != null) {
+            actorManager.addActorClientSide(actor, gamePane);
+        }
+    }
+
+    public void updateActorStateFromServer(int actorId, String actorType, String serializedState) {
+
+        if(actorManager != null)
+        {
+            Actor actor = actorManager.getActor(actorId);
+            if (actor == null) {
+                // This might happen if ADD_ACTOR message was missed or arrived late.
+                addActorFromServer(actorId, actorType, serializedState);
+                return;
+            }
+
+            Map<String, String> stateData = ReplicationUtil.deserializeStateMap(serializedState);
+            ReplicationUtil.applyReplicatedState(actor, stateData);
+        }
     }
 
     public void removeActor(int actorId) {
-        if (actorManager == null || gamePane == null) {
-            return;
+        if(actorManager != null)
+        {
+            actorManager.removeActorClientSide(actorId);
+            System.out.println("CLIENT: Removed actor " + actorId);
         }
-        actorManager.removeActor(actorId, gamePane);
-    }
-
-    public Pane getGamePane() {
-        return gamePane;
     }
 }

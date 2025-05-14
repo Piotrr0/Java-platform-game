@@ -1,9 +1,6 @@
 package com.example.game.actors;
 
 import javafx.scene.layout.Pane;
-import javafx.scene.paint.Color;
-import javafx.geometry.Rectangle2D;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 public class ActorManager {
-    private List<Actor> actors;
     public Map<Integer, Actor> actorsById;
     private Map<Integer, Player> players;
     private Pane gamePane;
@@ -23,7 +19,6 @@ public class ActorManager {
     public ActorManager() {
         this.isServer = true;
         this.gamePane = null;
-        this.actors = new ArrayList<>();
         this.actorsById = new ConcurrentHashMap<>();
         this.players = new ConcurrentHashMap<>();
     }
@@ -32,21 +27,35 @@ public class ActorManager {
     public ActorManager(Pane gamePane) {
         this.isServer = false;
         this.gamePane = gamePane;
-        this.actors = new ArrayList<>();
         this.actorsById = new HashMap<>();
         this.players = new HashMap<>();
     }
 
+    // Server-side: Add actor
     public void addActor(Actor actor) {
         if (!isServer) {
             return;
         }
-
-        actors.add(actor);
         actorsById.put(actor.getId(), actor);
         if (actor instanceof Player) {
             players.put(((Player) actor).getPlayerId(), (Player) actor);
         }
+    }
+
+    // Client-side: Add an actor
+    public void addActorClientSide(Actor actor, Pane targetPane) {
+        if (isServer) {
+            return;
+        }
+        if (actorsById.containsKey(actor.getId())) { // Actor already exists
+            return;
+        }
+
+        actorsById.put(actor.getId(), actor);
+        if (actor instanceof Player) {
+            players.put(((Player) actor).getPlayerId(), (Player) actor);
+        }
+        actor.addToPane(targetPane);
     }
 
     public Actor getActor(int id) {
@@ -55,13 +64,10 @@ public class ActorManager {
 
     // Server-side method to remove actor
     public void removeActor(int actorId) {
-        if (!isServer) {
-            return;
-        }
+        if (!isServer) return;
 
         Actor actor = actorsById.remove(actorId);
         if (actor != null) {
-            actors.remove(actor);
             if (actor instanceof Player) {
                 players.remove(((Player) actor).getPlayerId());
             }
@@ -69,14 +75,11 @@ public class ActorManager {
     }
 
     // Client-side method to remove actor (based on server instruction)
-    public void removeActor(int actorId, Pane pane) {
-        if (isServer) {
-            return;
-        }
+    public void removeActorClientSide(int actorId) {
+        if (isServer) return;
 
         Actor actor = actorsById.remove(actorId);
         if (actor != null) {
-            actors.remove(actor);
             if (actor instanceof Player) {
                 players.remove(((Player) actor).getPlayerId());
             }
@@ -89,82 +92,36 @@ public class ActorManager {
     }
 
     // Server-side update loop
-    public void updateServer()
-    {
-        if (!isServer) {
-            return;
-        }
-
-        for (Actor actor : actors) {
+    public void updateServer() {
+        if (!isServer) return;
+        for (Actor actor : actorsById.values()) {
             actor.updateServer(this);
         }
     }
 
     public List<Actor> getAllActorsServer() {
-        if (!isServer) {
-            return null;
-        }
-        return new ArrayList<>(actors);
+        if (!isServer) return new ArrayList<>();
+        return new ArrayList<>(actorsById.values());
     }
 
-    public void updateClient()
-    {
-        if (isServer)
-        {
-            return;
-        }
-
-        for (Actor actor : actors)
-        {
+    // Client-side update loop (actors update their graphics)
+    public void updateClient() {
+        if (isServer) return;
+        for (Actor actor : actorsById.values()) {
             actor.updateClient();
         }
     }
 
     // Server-side method to create a player
-    public Player createPlayer(int playerId, double x, double y)
-    {
-        if (!isServer) {
-            return null;
-        }
+    public Player createPlayer(int playerId, double x, double y) {
+        if (!isServer) return null;
         Player player = new Player(playerId, x, y);
         addActor(player);
         return player;
     }
 
-    public Actor createOrUpdateActor(int id, String type, double x, double y, double width, double height, boolean isLocalPlayer, Pane pane)
-    {
-        if (isServer) {
-            return null;
-        }
-
-        Actor actor = actorsById.get(id);
-        if (actor == null)
-        {
-            Color color = null;
-            if ("Player".equals(type)) {
-                actor = new Player(id, x, y, isLocalPlayer);
-                players.put(id, (Player)actor);
-            } else {
-                color = Color.GRAY;
-                actor = new Actor(id, x, y, width, height, color);
-            }
-
-            actor.addToPane(pane);
-            actors.add(actor);
-            actorsById.put(id, actor);
-
-        } else {
-            actor.setPosition(x, y);
-            actor.setScale(width, height);
-        }
-        return actor;
-    }
-
-    public List<Actor> getAllActorsClient()
-    {
-        if (isServer) {
-            return null;
-        }
-        return new ArrayList<>(actors);
+    public List<Actor> getAllActorsClient() {
+        if (isServer) return new ArrayList<>();
+        return new ArrayList<>(actorsById.values());
     }
 }

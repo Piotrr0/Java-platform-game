@@ -1,5 +1,6 @@
 package com.example.game.actors;
 
+import com.example.game.network.Replicated;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
 import javafx.scene.layout.Pane;
@@ -11,12 +12,17 @@ public class Actor
 {
     //TODO: NOW ID IS MANUAL FOR STATIC OBJECT AND AUTOMATIC FOR PLAYER. MAKE SURE IT IS ALSO AUTMATIC FOR ACTORS
     //TODO: Add Vector2D class for easier computing location and velocity
+
     protected int id = -1;
     protected String type = "Actor";
 
+    @Replicated
     protected double x;
+    @Replicated
     protected double y;
+    @Replicated
     protected double width;
+    @Replicated
     protected double height;
 
     protected double velocityX = 0;
@@ -28,8 +34,8 @@ public class Actor
 
     protected Pane parentPane;
     protected Rectangle graphicalRepresentation;
-    protected Color color;
 
+    protected Color color;
 
     // Constructor for server-side actors (no graphics needed initially)
     public Actor(int id, double x, double y, double width, double height)
@@ -73,6 +79,11 @@ public class Actor
         if (graphicalRepresentation != null) {
             graphicalRepresentation.setX(x);
             graphicalRepresentation.setY(y);
+            graphicalRepresentation.setWidth(width);
+            graphicalRepresentation.setHeight(height);
+            if (this.color != null && graphicalRepresentation.getFill() != this.color) {
+                graphicalRepresentation.setFill(this.color);
+            }
         }
     }
 
@@ -91,10 +102,6 @@ public class Actor
     public void setScale(double width, double height) {
         this.width = width;
         this.height = height;
-        if (graphicalRepresentation != null) {
-            graphicalRepresentation.setWidth(width);
-            graphicalRepresentation.setHeight(height);
-        }
     }
 
     // Server-side collision check
@@ -226,6 +233,9 @@ public class Actor
     public boolean isCollidable() { return collidable; }
     public double getVelocityX() { return velocityX; }
     public double getVelocityY() { return velocityY; }
+
+    public void setColor(Color color) {this.color = color;}
+    public Color getColor() { return this.color; }
 
     public boolean isAffectedByGravity() {
         return affectedByGravity;
