@@ -26,7 +26,11 @@ public class Actor
     protected double height;
 
     protected double velocityX = 0;
+
+    @Replicated(Using = "onRep_velocityY")
     protected double velocityY = 0;
+    protected void onRep_velocityY(double oldVelocityY) {}
+
 
     protected static final double GRAVITY = 0.5;
     protected boolean affectedByGravity = false;

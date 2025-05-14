@@ -8,6 +8,20 @@ public class Player extends Actor {
     private final double moveSpeed = 5.0;
     private final double jumpForce = -10.0;
 
+    // For demonstration purposes
+    protected void onRep_velocityY(double oldVelocityY)
+    {
+        System.out.println("old:" + oldVelocityY + "new:" + this.velocityY);
+        if(this.velocityY > 0)
+        {
+            this.color = Color.MAGENTA;
+        }
+        else
+        {
+            this.color = Color.GREEN;
+        }
+    }
+
     // Server-side constructor
     public Player(int playerId, double x, double y)
     {
