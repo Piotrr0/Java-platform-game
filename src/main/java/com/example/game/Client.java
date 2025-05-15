@@ -1,6 +1,7 @@
 package com.example.game;
 
 import com.example.game.messages.ServerMessages;
+import com.example.game.network.RPCUtils;
 import javafx.application.Platform;
 import java.io.*;
 import java.net.Socket;
@@ -139,6 +140,8 @@ public class Client{
                 handleActorUpdate(msg);
             } else if (msg.equals(ServerMessages.HAS_GAME_CHANGED)) {
                 handleGameHasChanged(msg);
+            }else if (msg.startsWith(ServerMessages.RPC_CALL_PREFIX)) {
+                RPCUtils.processIncomingRPC(msg, controller.getActorManager(), false);
             }
         }
 

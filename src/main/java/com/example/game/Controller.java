@@ -3,6 +3,7 @@ package com.example.game;
 import com.example.game.actors.Actor;
 import com.example.game.actors.ActorManager;
 import com.example.game.actors.Player;
+import com.example.game.network.RPCUtils;
 import com.example.game.network.ReplicationUtil;
 import com.example.game.world.World;
 import com.example.game.world.WorldFactory;
@@ -93,6 +94,7 @@ public class Controller {
         if (server != null) {
             server.finalizeGameSetupAndStart();
             Main.currentClient = new Client(server.getHostname(), server.getPort(), this);
+            RPCUtils.initializeClient();
             server.stopListeningForIncomingConnections();
         } else {
             System.out.println("server is null :/");
@@ -233,5 +235,9 @@ public class Controller {
             actorManager.removeActorClientSide(actorId);
             System.out.println("CLIENT: Removed actor " + actorId);
         }
+    }
+
+    public ActorManager getActorManager() {
+        return actorManager;
     }
 }

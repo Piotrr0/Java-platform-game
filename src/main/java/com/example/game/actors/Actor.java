@@ -1,5 +1,7 @@
 package com.example.game.actors;
 
+import com.example.game.network.ExecutionTarget;
+import com.example.game.network.RPC;
 import com.example.game.network.Replicated;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
@@ -15,6 +17,8 @@ public class Actor
 
     protected int id = -1;
     protected String type = "Actor";
+    protected boolean hasAuthority = false;
+    protected int ownerPlayerId = -1;
 
     @Replicated
     protected double x;
@@ -39,24 +43,32 @@ public class Actor
     protected Pane parentPane;
     protected Rectangle graphicalRepresentation;
 
+    @Replicated
     protected Color color;
 
     // Constructor for server-side actors (no graphics needed initially)
-    public Actor(int id, double x, double y, double width, double height)
-    {
+    public Actor(int id, double x, double y, double width, double height, boolean isServer) {
         this.id = id;
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.hasAuthority = isServer;
     }
 
     // Constructor for client-side actors, used when creating/updating based on server state
-    public Actor(int id, double x, double y, double width, double height, Color color)
-    {
-        this(id, x, y, width, height);
+    public Actor(int id, double x, double y, double width, double height) {
+        this(id, x, y, width, height, true);
+    }
+
+    public Actor(int id, double x, double y, double width, double height, Color color) {
+        this(id, x, y, width, height, false);
         this.color = color;
         initializeGraphics(color);
+    }
+
+    public int getOwnerPlayerId() {
+        return ownerPlayerId;
     }
 
     // Client-side methods for graphics
@@ -89,6 +101,12 @@ public class Actor
                 graphicalRepresentation.setFill(this.color);
             }
         }
+    }
+
+    @RPC(target = ExecutionTarget.SERVER)
+    public void server_SetColor(Color newColor)
+    {
+        this.color = newColor;
     }
 
     // Client-side update method, primarily for graphical state based on current x/y
@@ -244,8 +262,8 @@ public class Actor
     public boolean isAffectedByGravity() {
         return affectedByGravity;
     }
-
     public void setAffectedByGravity(boolean affectedByGravity) {
         this.affectedByGravity = affectedByGravity;
     }
+    public boolean hasAuthority() {return this.hasAuthority;}
 }

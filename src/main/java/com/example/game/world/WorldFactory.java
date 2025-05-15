@@ -2,6 +2,7 @@ package com.example.game.world;
 
 import com.example.game.actors.Actor;
 import com.example.game.actors.ActorManager;
+import javafx.scene.paint.Color;
 
 public class WorldFactory
 {
@@ -32,6 +33,7 @@ public class WorldFactory
 
         Actor obstacle1 = new Actor(1001, 150, 150, 50, 50);
         actorManager.addActor(obstacle1);
+        obstacle1.server_SetColor(Color.BLUE);
 
         Actor obstacle2 = new Actor(1002, 0, 300, 1000, 75);
         actorManager.addActor(obstacle2);

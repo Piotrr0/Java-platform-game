@@ -1,24 +1,20 @@
 package com.example.game.actors;
 
+import com.example.game.network.RPCUtils;
 import javafx.scene.paint.Color;
 
 public class Player extends Actor {
     private int playerId;
-    private boolean isLocalPlayer;
     private final double moveSpeed = 5.0;
     private final double jumpForce = -10.0;
 
     // For demonstration purposes
     protected void onRep_velocityY(double oldVelocityY)
     {
-        System.out.println("old:" + oldVelocityY + "new:" + this.velocityY);
-        if(this.velocityY > 0)
-        {
-            this.color = Color.MAGENTA;
-        }
-        else
-        {
-            this.color = Color.GREEN;
+        if (velocityY > 0) {
+            RPCUtils.callServerRPC(this, "server_SetColor", Color.MAGENTA);
+        } else {
+            RPCUtils.callServerRPC(this, "server_SetColor", Color.GREEN);
         }
     }
 
@@ -37,7 +33,6 @@ public class Player extends Actor {
         super(playerId, x, y, 50, 50, isLocalPlayer ? Color.GREEN : Color.RED);
         this.type = "Player";
         this.playerId = playerId;
-        this.isLocalPlayer = isLocalPlayer;
         this.affectedByGravity = true;
     }
 

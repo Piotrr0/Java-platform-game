@@ -4,6 +4,7 @@ import com.example.game.messages.ServerMessages;
 import com.example.game.actors.ActorManager;
 import com.example.game.actors.Actor;
 import com.example.game.actors.Player;
+import com.example.game.network.RPCUtils;
 import com.example.game.network.ReplicationUtil;
 import com.example.game.world.World;
 import com.example.game.world.WorldManager;
@@ -50,6 +51,7 @@ public class Server implements Runnable {
 
         this.worldManager = new WorldManager();
         worldManager.initializeDefaultWorlds();
+        RPCUtils.initializeServer(this);
     }
 
     public void startGame() {
@@ -374,7 +376,14 @@ public class Server implements Runnable {
                     String message = in.readUTF();
                     System.out.println("SERVER: Received from player " + playerId + ": " + message);
 
-                    sharedCommandQueue.offer(new ClientCommand(playerId, message));
+                    if (message.startsWith(ServerMessages.RPC_CALL_PREFIX)) {
+                        World activeWorld = worldManager.getActiveWorld();
+                        if (activeWorld != null) {
+                            RPCUtils.processIncomingRPC(message, activeWorld.getActorManager(), true);
+                        }
+                    } else {
+                        sharedCommandQueue.offer(new ClientCommand(playerId, message));
+                    }
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);

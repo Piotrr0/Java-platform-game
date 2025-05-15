@@ -17,4 +17,6 @@ public class ServerMessages
 
     // Format: REMOVE_ACTOR:actorId
     public static final String REMOVE_ACTOR = "REMOVE_ACTOR:";
+
+    public static final String RPC_CALL_PREFIX = "RPC_CALL:";
 }
