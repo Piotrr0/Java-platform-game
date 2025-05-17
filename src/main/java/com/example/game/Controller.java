@@ -93,8 +93,7 @@ public class Controller {
         System.out.println("Host wants to start a game");
         if (server != null) {
             server.finalizeGameSetupAndStart();
-            Main.currentClient = new Client(server.getHostname(), server.getPort(), this);
-            server.stopListeningForIncomingConnections();
+            //server.stopListeningForIncomingConnections();
         } else {
             System.out.println("server is null :/");
         }
