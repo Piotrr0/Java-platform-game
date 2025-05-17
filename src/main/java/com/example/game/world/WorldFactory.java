@@ -2,6 +2,7 @@ package com.example.game.world;
 
 import com.example.game.actors.Actor;
 import com.example.game.actors.ActorManager;
+import javafx.scene.paint.Color;
 
 public class WorldFactory
 {
@@ -30,10 +31,28 @@ public class WorldFactory
     private static void setupLevel2(World world) {
         ActorManager actorManager = world.getActorManager();
 
-        Actor obstacle1 = new Actor(1001, 150, 150, 50, 50);
+        //base
+        Actor obstacle1 = new Actor(1001, -150, 500, 1000, 75);
         actorManager.addActor(obstacle1);
 
-        Actor obstacle2 = new Actor(1002, 0, 300, 1000, 75);
+        //first row of platforms
+        Actor obstacle2 = new Actor(1002, 0, 380, 200, 20);
         actorManager.addActor(obstacle2);
+
+        Actor obstacle3 = new Actor(1003, 500, 380, 200, 20);
+        actorManager.addActor(obstacle3);
+
+        //second row
+        Actor obstacle4 = new Actor(1004, 220, 290, 260, 20);
+        actorManager.addActor(obstacle4);
+
+        //third row
+        Actor obstacle5 = new Actor(1005, 0, 200, 100, 20);
+        actorManager.addActor(obstacle5);
+
+        Actor obstacle6 = new Actor(1006, 600, 200, 100, 20);
+        actorManager.addActor(obstacle6);
+
+
     }
 }
