@@ -18,6 +18,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -93,9 +94,13 @@ public class Controller {
         System.out.println("Host wants to start a game");
         if (server != null) {
             server.finalizeGameSetupAndStart();
+<<<<<<< HEAD
             Main.currentClient = new Client(server.getHostname(), server.getPort(), this);
             RPCUtils.initializeClient(Main.currentClient);
             server.stopListeningForIncomingConnections();
+=======
+            //server.stopListeningForIncomingConnections();
+>>>>>>> upstream
         } else {
             System.out.println("server is null :/");
         }
@@ -124,7 +129,8 @@ public class Controller {
 
     public void setupGameScene(String sceneName) {
         gamePane = new Pane();
-        Scene scene = new Scene(gamePane, 500, 500);
+        gamePane.setStyle("-fx-background-color: black;");
+        Scene scene = new Scene(gamePane, 700, 550);
 
         scene.setOnKeyPressed(this::handleKeyEvent);
         scene.setOnKeyReleased(this::handleKeyEventReleased);
@@ -202,7 +208,8 @@ public class Controller {
         if ("Player".equals(actorType)) {
             actor = new Player(actorId, 0, 0, isLocal);
         } else {
-            actor = new Actor(actorId, 0, 0, 10, 10, Color.GREY);
+            //platform - nothing matters except color
+            actor = new Actor(actorId, 0, 0, 0, 0, Color.BROWN);
         }
 
         Map<String, String> stateData = ReplicationUtil.deserializeStateMap(serializedState);

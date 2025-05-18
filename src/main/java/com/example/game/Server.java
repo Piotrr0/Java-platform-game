@@ -168,6 +168,7 @@ public class Server implements Runnable {
 
                 clientConnection.sendMessage(ServerMessages.PLAYER_ID + newPlayerId);
 
+
                 if (gameHasStarted) {
                     World activeWorld = worldManager.getActiveWorld();
                     if (activeWorld != null) {
@@ -176,6 +177,8 @@ public class Server implements Runnable {
                             clientConnection.sendMessage(ServerMessages.SET_GAME_SCENE + activeWorld.getWorldName());
                             broadcastAddActor(player);
                             sendFullWorldStateToPlayer(clientConnection);
+
+
                         }
                     }
                 }
@@ -191,32 +194,7 @@ public class Server implements Runnable {
             }
         }
 
-        long lastTickTime = System.currentTimeMillis();
-        while (gameHasStarted) {
-            long now = System.currentTimeMillis();
-            long elapsedTime = now - lastTickTime;
 
-            if (elapsedTime >= polingInterval) {
-                lastTickTime = now;
-
-                processClientCommands();
-                if (worldManager.getActiveWorld() != null) {
-                    worldManager.update();
-                }
-                broadcastActorStates();
-                broadcastMessage(ServerMessages.HAS_GAME_CHANGED);
-            } else {
-                try {
-                    long sleepTime = polingInterval - elapsedTime;
-                    if (sleepTime > 0) {
-                        Thread.sleep(sleepTime);
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }
-        shutdown();
     }
 
     private void sendFullWorldStateToPlayer(ClientConnection newClientConn) {
@@ -242,6 +220,14 @@ public class Server implements Runnable {
     public void finalizeGameSetupAndStart() {
         if (!gameHasStarted) {
             startGame();
+
+
+            //thread has to be here to work
+            //the function itself will be launched automatically when 2 players are connected but for now Game class has to be expanded
+            Thread gameThread = new Thread(new Game());
+            gameThread.start();
+
+
         }
 
         World activeWorld = worldManager.getActiveWorld();
@@ -390,6 +376,41 @@ public class Server implements Runnable {
             } finally {
                 closeConnection("Connection ended");
             }
+        }
+    }
+
+    //BASIC CLASS FOR STARTING GAME IN NEW THREAD - gotta start somewhere with infinite games
+    //end goal is having an array of Game class objects all of which are different games with different maps
+    private class Game implements Runnable {
+
+        @Override
+        public void run(){
+            long lastTickTime = System.currentTimeMillis();
+            while (gameHasStarted) {
+                long now = System.currentTimeMillis();
+                long elapsedTime = now - lastTickTime;
+
+                if (elapsedTime >= polingInterval) {
+                    lastTickTime = now;
+
+                    processClientCommands();
+                    if (worldManager.getActiveWorld() != null) {
+                        worldManager.update();
+                    }
+                    broadcastActorStates();
+                    broadcastMessage(ServerMessages.HAS_GAME_CHANGED);
+                } else {
+                    try {
+                        long sleepTime = polingInterval - elapsedTime;
+                        if (sleepTime > 0) {
+                            Thread.sleep(sleepTime);
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+            shutdown();
         }
     }
 }
