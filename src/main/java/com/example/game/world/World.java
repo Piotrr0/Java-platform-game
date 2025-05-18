@@ -8,23 +8,20 @@ import java.util.Map;
 
 public class World {
     private final String worldName;
-    private final ActorManager actorManager;
+    private static ActorManager actorManager;
 
     public World(String worldName)
     {
         this.worldName = worldName;
-        this.actorManager = new ActorManager();
-    }
-
-    public World (String worldName, Pane gamePane)
-    {
-        this.worldName = worldName;
-        this.actorManager = new ActorManager(gamePane);
+        actorManager = new ActorManager();
     }
 
     public String getWorldName() { return worldName; }
     public ActorManager getActorManager() { return actorManager; }
     public Actor getActorFromId(int id) {return actorManager.getActor(id);}
+
+    // Server method for spawning actors
+    public static void spawnActor(Actor actorToSpawn) {actorManager.addActor(actorToSpawn); }
 
     public void update()
     {
