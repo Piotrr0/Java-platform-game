@@ -3,6 +3,7 @@ package com.example.game;
 import com.example.game.actors.Actor;
 import com.example.game.actors.ActorManager;
 import com.example.game.actors.Player;
+import com.example.game.actors.Prop;
 import com.example.game.network.ReplicationUtil;
 import com.example.game.world.World;
 import com.example.game.world.WorldFactory;
@@ -203,14 +204,15 @@ public class Controller {
         boolean isLocal = (actorId == localPlayerId);
         if ("Player".equals(actorType)) {
             actor = new Player(actorId, 0, 0, isLocal);
-        } else {
-            Color color = Color.BROWN;
-            //platform - nothing matters except
-            if(actorId==1007){
-                color = Color.YELLOW;
-            }
-            actor = new Actor(actorId, 0, 0, 0, 0,color);
         }
+        else if("Prop".equals(actorType)){
+            actor = new Prop(actorId, 0, 0, 0, 0,Color.ORANGE,"Crate.png");
+        }
+        else{
+            actor = new Actor(actorId, 0, 0, 0, 0,Color.BROWN);
+        }
+
+a
 
         Map<String, String> stateData = ReplicationUtil.deserializeStateMap(serializedState);
         ReplicationUtil.applyReplicatedState(actor, stateData);

@@ -73,6 +73,15 @@ public class Actor
         this.graphicalRepresentation = rectangle;
     }
 
+    // Client-side methods for graphics, instead of color we generate a texture
+    protected void initializeGraphics(String path) {
+        Rectangle rectangle = new Rectangle(width, height, color);
+        rectangle.setX(x);
+        rectangle.setY(y);
+        this.color = Color.PINK;
+        this.graphicalRepresentation = rectangle;
+    }
+
     public void addToPane(Pane pane) {
         this.parentPane = pane;
         pane.getChildren().add(graphicalRepresentation);
@@ -91,7 +100,7 @@ public class Actor
             graphicalRepresentation.setY(y);
             graphicalRepresentation.setWidth(width);
             graphicalRepresentation.setHeight(height);
-            if (this.color != null && graphicalRepresentation.getFill() != this.color) {
+            if (this.color != null && graphicalRepresentation.getFill() != this.color && !this.getType().equals("Prop")) {
                 graphicalRepresentation.setFill(this.color);
             }
         }
