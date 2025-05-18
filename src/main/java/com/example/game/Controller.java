@@ -157,6 +157,9 @@ public class Controller {
                 case RIGHT:
                     msg = "MOVE_RIGHT";
                     break;
+                case SPACE:
+                    msg = "SHOOT";
+                    break;
                 default:
                     return;
             }
@@ -201,8 +204,12 @@ public class Controller {
         if ("Player".equals(actorType)) {
             actor = new Player(actorId, 0, 0, isLocal);
         } else {
-            //platform - nothing matters except color
-            actor = new Actor(actorId, 0, 0, 0, 0, Color.BROWN);
+            Color color = Color.BROWN;
+            //platform - nothing matters except
+            if(actorId==1007){
+                color = Color.YELLOW;
+            }
+            actor = new Actor(actorId, 0, 0, 0, 0,color);
         }
 
         Map<String, String> stateData = ReplicationUtil.deserializeStateMap(serializedState);

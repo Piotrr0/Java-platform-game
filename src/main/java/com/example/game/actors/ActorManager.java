@@ -13,6 +13,8 @@ public class ActorManager {
     private Map<Integer, Player> players;
     private Pane gamePane;
 
+
+
     private boolean isServer = false;
 
     // Server-side constructor

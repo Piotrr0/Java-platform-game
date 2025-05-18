@@ -1,9 +1,7 @@
 package com.example.game;
 
+import com.example.game.actors.*;
 import com.example.game.messages.ServerMessages;
-import com.example.game.actors.ActorManager;
-import com.example.game.actors.Actor;
-import com.example.game.actors.Player;
 import com.example.game.network.ReplicationUtil;
 import com.example.game.world.World;
 import com.example.game.world.WorldManager;
@@ -264,7 +262,15 @@ public class Server implements Runnable {
         while ((command = commandQueue.poll()) != null) {
             Player player = actorManager.getPlayer(command.playerId);
             if (player != null) {
-                player.move(command.commandString);
+                if(Objects.equals(command.commandString, "SHOOT")){
+                    Actor arrow = new Arrow(300,player.getX(),player.getY()+70,30,30);
+                    actorManager.addActor(arrow);
+                    System.out.println(player.getPlayerId()+"wants to shoot");
+                }
+                else{
+                    player.move(command.commandString);
+
+                }
             }
         }
     }
@@ -353,12 +359,13 @@ public class Server implements Runnable {
             removeClient(this);
         }
 
+
         @Override
         public void run() {
             try {
                 while (socket.isConnected()) {
                     String message = in.readUTF();
-                    System.out.println("SERVER: Received from player " + playerId + ": " + message);
+                    //System.out.println("SERVER: Received from player " + playerId + ": " + message);
 
                     sharedCommandQueue.offer(new ClientCommand(playerId, message));
                 }
@@ -388,8 +395,12 @@ public class Server implements Runnable {
                     if (worldManager.getActiveWorld() != null) {
                         worldManager.update();
                     }
+
+                    deleteActors();
                     broadcastActorStates();
                     broadcastMessage(ServerMessages.HAS_GAME_CHANGED);
+
+
                 } else {
                     try {
                         long sleepTime = polingInterval - elapsedTime;
@@ -402,6 +413,32 @@ public class Server implements Runnable {
                 }
             }
             shutdown();
+        }
+
+        /**
+         * Function takes care of Actors that have a field of <code>toBeDeleted</code> set to true. It is responsible for checking which Actors should be deleted and makes sure that they
+         * are deleted on both server and client.
+         * */
+        private void deleteActors(){
+            for(int i = 0;i<worldManager.getActiveWorld().getActorManager().getAllActorsServer().size();i++){
+                Actor actor = worldManager.getActiveWorld().getActorManager().getAllActorsServer().get(i);
+                int idOfActor = worldManager.getActiveWorld().getActorFromId(worldManager.getActiveWorld().getActorManager().getAllActorsServer().get(i).getId()).getId();
+                boolean shouldBeDeleted = worldManager.getActiveWorld().getActorFromId(actor.getId()).isToBeDeleted();
+                if(shouldBeDeleted){
+                    if(actor.getType()=="Prop"){
+                        handlePropRemoval((Prop) actor);
+                    }
+                    worldManager.getActiveWorld().getActorManager().removeActor(idOfActor);
+                    broadcastMessage("REMOVE_ACTOR:"+idOfActor);
+                }
+            }
+        }
+
+        /**
+         * This function handles the prop removal, based on type of prop we can decide what to do, e.g if we destroy the chest we can increase points or something.
+         * **/
+        private void handlePropRemoval(Prop prop) {
+            System.out.println("Im deleting a prop with a type of "+prop.getPropType());
         }
     }
 }

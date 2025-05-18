@@ -31,6 +31,7 @@ public class WorldManager
     public void update() {
         if (activeWorld != null) {
             activeWorld.update();
+            ;
         }
     }
 

@@ -2,6 +2,7 @@ package com.example.game.world;
 
 import com.example.game.actors.Actor;
 import com.example.game.actors.ActorManager;
+import com.example.game.actors.Prop;
 import javafx.scene.paint.Color;
 
 public class WorldFactory
@@ -52,6 +53,11 @@ public class WorldFactory
 
         Actor obstacle6 = new Actor(1006, 600, 200, 100, 20);
         actorManager.addActor(obstacle6);
+
+        Actor chest = new Prop(1007, 600, 150, 50, 50,"chest");
+        actorManager.addActor(chest);
+
+
 
 
     }

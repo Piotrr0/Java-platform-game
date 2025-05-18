@@ -11,7 +11,7 @@ public class Player extends Actor {
     // For demonstration purposes
     protected void onRep_velocityY(double oldVelocityY)
     {
-        System.out.println("old:" + oldVelocityY + "new:" + this.velocityY);
+        //System.out.println("old:" + oldVelocityY + "new:" + this.velocityY);
         if(this.velocityY > 0)
         {
             this.color = Color.MAGENTA;

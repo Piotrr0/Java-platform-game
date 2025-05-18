@@ -24,6 +24,10 @@ public class Actor
     protected double width;
     @Replicated
     protected double height;
+    @Replicated
+    //Flag that determines if actor should be removed with next tickrate
+    protected boolean toBeDeleted = false;
+
 
     protected double velocityX = 0;
 
@@ -40,6 +44,7 @@ public class Actor
     protected Rectangle graphicalRepresentation;
 
     protected Color color;
+
 
     // Constructor for server-side actors (no graphics needed initially)
     public Actor(int id, double x, double y, double width, double height)
@@ -64,6 +69,7 @@ public class Actor
         Rectangle rectangle = new Rectangle(width, height, color);
         rectangle.setX(x);
         rectangle.setY(y);
+        this.color = color;
         this.graphicalRepresentation = rectangle;
     }
 
@@ -117,7 +123,15 @@ public class Actor
     }
 
     // Server-side
-    public void handleCollision(Actor other) { System.out.println("Collision occurred: " + other.id); };
+    public void handleCollision(Actor other) {
+        //If one of the colliding objects was arrow, we want to flag the arrow to be deleted.
+        if(this.getType()=="Arrow"){
+            this.toBeDeleted = true;
+            if(other.getType()=="Prop"){
+                other.toBeDeleted = true;
+            }
+        }
+    };
 
     public Rectangle2D getBounds() {
         return new Rectangle2D(x, y, width, height);
@@ -237,15 +251,12 @@ public class Actor
     public boolean isCollidable() { return collidable; }
     public double getVelocityX() { return velocityX; }
     public double getVelocityY() { return velocityY; }
+    public boolean isToBeDeleted(){return toBeDeleted;}
 
     public void setColor(Color color) {this.color = color;}
     public Color getColor() { return this.color; }
 
-    public boolean isAffectedByGravity() {
-        return affectedByGravity;
-    }
 
-    public void setAffectedByGravity(boolean affectedByGravity) {
-        this.affectedByGravity = affectedByGravity;
-    }
+
+
 }
