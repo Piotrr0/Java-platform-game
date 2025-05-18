@@ -1,5 +1,6 @@
 package com.example.game.network;
 
+import com.example.game.Client;
 import com.example.game.Server;
 import com.example.game.actors.Actor;
 import com.example.game.actors.ActorManager;
@@ -13,12 +14,13 @@ import java.util.stream.Collectors;
 public class RPCUtils {
 
     private static Server serverInstance;
+    private static Client clientInstance;
 
     public static void initializeServer(Server server) {
         serverInstance = server;
     }
 
-    public static void initializeClient() {}
+    public static void initializeClient(Client client) { clientInstance = client; }
 
     public static String serializeParameters(Object... args) {
         if (args == null || args.length == 0) {
@@ -96,7 +98,11 @@ public class RPCUtils {
                 params;
 
         try {
-            serverInstance.broadcastMessage(message);
+            if (clientInstance != null) {
+                clientInstance.sendDataToServer(message);
+            } else {
+                serverInstance.broadcastMessage(message);
+            }
         } catch (Exception e) {
         }
     }
@@ -110,6 +116,7 @@ public class RPCUtils {
                 actorId + ":" +
                 methodName + ":" +
                 params;
+
         serverInstance.sendMessageToPlayer(ownerPlayerId, message);
     }
 

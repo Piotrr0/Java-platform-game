@@ -94,7 +94,7 @@ public class Controller {
         if (server != null) {
             server.finalizeGameSetupAndStart();
             Main.currentClient = new Client(server.getHostname(), server.getPort(), this);
-            RPCUtils.initializeClient();
+            RPCUtils.initializeClient(Main.currentClient);
             server.stopListeningForIncomingConnections();
         } else {
             System.out.println("server is null :/");
