@@ -16,17 +16,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Server implements Runnable {
-    private ServerSocket socket;
-    private List<ClientConnection> connectedClients;
-    private volatile boolean gameHasStarted = false;
-    private final int port;
-    private final String hostname;
 
-    private WorldManager worldManager;
+    private ServerSocket socket; //stay
+    private final int port; //stay
+    private final String hostname; //stay
+    private List<Game> games;
+    private List<Thread> gameThreads;
 
-    private int nextPlayerId = 0;
 
-    private ConcurrentLinkedQueue<ClientCommand> commandQueue = new ConcurrentLinkedQueue<>();
+    private int nextPlayerId = 0; //stay
+
 
     //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
     private final int polingInterval = 30;
@@ -44,55 +43,14 @@ public class Server implements Runnable {
         this.port = port;
         this.hostname = hostname;
         this.socket = new ServerSocket(port, 50, InetAddress.ofLiteral(hostname));
-        this.connectedClients = new CopyOnWriteArrayList<>();
+        this.games = new ArrayList<>();
+        this.gameThreads = new ArrayList<>();
 
-        this.worldManager = new WorldManager();
-        worldManager.initializeDefaultWorlds();
+
     }
 
-    public void startGame() {
-        System.out.println("SERVER: Game starting...");
-        this.gameHasStarted = true;
-    }
 
-    private void broadcastActorStates() {
-        World activeWorld = worldManager.getActiveWorld();
-        if (activeWorld == null || activeWorld.getActorManager() == null) return;
 
-        ActorManager actorManager = activeWorld.getActorManager();
-        List<Actor> actorSnapshot = actorManager.getAllActorsServer();
-
-        if (actorSnapshot.isEmpty()) return;
-
-        for (Actor actor : actorSnapshot) {
-            Map<String, Object> replicatedState = ReplicationUtil.getReplicatedState(actor);
-            String serializedState = ReplicationUtil.serializeStateMap(replicatedState);
-
-            // Message format: UPDATE_ACTOR:<id>:<type>:<serialized_state>
-            String msg = ServerMessages.UPDATE_ACTOR +
-                    actor.getId() + ":" +
-                    actor.getType() + ":" +
-                    serializedState;
-            broadcastMessage(msg);
-        }
-    }
-
-    public void broadcastAddActor(Actor actor) {
-        Map<String, Object> replicatedState = ReplicationUtil.getReplicatedState(actor);
-        String serializedState = ReplicationUtil.serializeStateMap(replicatedState);
-
-        // Message format: ADD_ACTOR:<id>:<type>:<serialized_state>
-        String msg = ServerMessages.ADD_ACTOR +
-                actor.getId() + ":" +
-                actor.getType() + ":" +
-                serializedState;
-        broadcastMessage(msg);
-    }
-
-    public void broadcastRemoveActor(int actorId) {
-        String msg = ServerMessages.REMOVE_ACTOR + actorId;
-        broadcastMessage(msg);
-    }
 
     /**
      * It makes serverSocket stop listening for new joining clients, however it will still be able to communicate
@@ -111,60 +69,44 @@ public class Server implements Runnable {
             throw new RuntimeException(e);
         }
 
-        for (ClientConnection clientConn : new ArrayList<>(connectedClients)) {
-            clientConn.closeConnection("Server shutting down");
-        }
+        //for (ClientConnection clientConn : new ArrayList<>(connectedClients)) {
+        //    clientConn.closeConnection("Server shutting down");
+        //}
 
-        connectedClients.clear();
-        commandQueue.clear();
+        //connectedClients.clear();
+        //commandQueue.clear();
     }
 
-    /**
-     * It broadcasts message to everyone, basically saying it sends message to everyone in the list of clients
-     *
-     * @param msg content of message to be sent
-     */
-    public void broadcastMessage(String msg) {
-        for (ClientConnection client : new ArrayList<>(connectedClients)) {
-            client.sendMessage(msg);
-        }
-    }
 
-    public void sendMessageToPlayer(int playerId, String msg) {
-        for (ClientConnection clientConn : connectedClients) {
-            if (clientConn.getPlayerId() == playerId) {
-                clientConn.sendMessage(msg);
-                return;
-            }
-        }
-    }
 
-    private void removeClient(ClientConnection clientConnection) {
-        if (clientConnection == null) return;
-        connectedClients.remove(clientConnection);
-
-        World activeWorld = worldManager.getActiveWorld();
-        if (activeWorld != null && activeWorld.getActorManager() != null) {
-            activeWorld.getActorManager().removeActor(clientConnection.getPlayerId());
-            broadcastRemoveActor(clientConnection.getPlayerId());
-        }
-    }
 
     @Override
     public void run() {
         while (!socket.isClosed()) {
             try {
+
+                Game game = new Game();
                 Socket clientSocket = socket.accept();
                 System.out.println("SERVER: Client connected from " + clientSocket.getRemoteSocketAddress());
-
                 int newPlayerId = nextPlayerId++;
-                ClientConnection clientConnection = new ClientConnection(clientSocket, newPlayerId, commandQueue);
-                connectedClients.add(clientConnection);
-                clientConnection.start();
+                game.addPlayer(clientSocket, newPlayerId);
 
-                clientConnection.sendMessage(ServerMessages.PLAYER_ID + newPlayerId);
+                //second player
+                clientSocket = socket.accept();
+                System.out.println("SERVER: Client connected from " + clientSocket.getRemoteSocketAddress());
+                newPlayerId = nextPlayerId++;
+                game.addPlayer(clientSocket, newPlayerId);
+                game.gameHasStarted=true; //start the game
+                //thread has to be here to work
+                //the function itself will be launched automatically when 2 players are connected but for now Game class has to be expanded
+                Thread gameThread = new Thread(game);
+                gameThread.start();
+                gameThreads.add(gameThread);
+                games.add(game);
 
 
+
+                /*
                 if (gameHasStarted) {
                     World activeWorld = worldManager.getActiveWorld();
                     if (activeWorld != null) {
@@ -178,6 +120,8 @@ public class Server implements Runnable {
                         }
                     }
                 }
+
+                 */
 
             } // TODO: I DO NOT KNOW BUT WITHOUT THIS IT DOESN'T WORK
             catch (SocketTimeoutException e) {
@@ -193,111 +137,7 @@ public class Server implements Runnable {
 
     }
 
-    private void sendFullWorldStateToPlayer(ClientConnection newClientConn) {
-        World activeWorld = worldManager.getActiveWorld();
-        if (activeWorld == null || activeWorld.getActorManager() == null) return;
 
-        ActorManager actorManager = activeWorld.getActorManager();
-        List<Actor> allActors = actorManager.getAllActorsServer();
-
-        for (Actor actor : allActors) {
-            if (actor.getId() == newClientConn.getPlayerId() && actor instanceof Player) continue;
-
-            Map<String, Object> replicatedState = ReplicationUtil.getReplicatedState(actor);
-            String serializedState = ReplicationUtil.serializeStateMap(replicatedState);
-            String msg = ServerMessages.ADD_ACTOR +
-                    actor.getId() + ":" +
-                    actor.getType() + ":" +
-                    serializedState;
-            newClientConn.sendMessage(msg);
-        }
-    }
-
-    public void finalizeGameSetupAndStart() {
-        if (!gameHasStarted) {
-            startGame();
-
-
-            //thread has to be here to work
-            //the function itself will be launched automatically when 2 players are connected but for now Game class has to be expanded
-            Thread gameThread = new Thread(new Game());
-            gameThread.start();
-
-
-        }
-
-        World activeWorld = worldManager.getActiveWorld();
-        if (activeWorld == null) {
-            if (!worldManager.setActiveWorld("Level2")) {
-                return;
-            }
-            activeWorld = worldManager.getActiveWorld();
-        }
-
-        for (ClientConnection clientConnection : new ArrayList<>(connectedClients)) { // Iterate a copy
-            if (activeWorld.getActorManager().getPlayer(clientConnection.getPlayerId()) == null) {
-                Player player = activeWorld.getActorManager().createPlayer(
-                        clientConnection.getPlayerId(),
-                        100.0 + (clientConnection.getPlayerId() * 60),
-                        100.0
-                );
-                if (player != null) {
-                    broadcastAddActor(player);
-                }
-            }
-        }
-
-        broadcastMessage(ServerMessages.SET_GAME_SCENE + activeWorld.getWorldName());
-        for (ClientConnection cc : connectedClients) {
-            sendFullWorldStateToPlayer(cc);
-        }
-    }
-
-    private void processClientCommands() {
-        ClientCommand command;
-        World activeWorld = worldManager.getActiveWorld();
-        if (activeWorld == null || activeWorld.getActorManager() == null) return;
-
-        ActorManager actorManager = activeWorld.getActorManager();
-        while ((command = commandQueue.poll()) != null) {
-            Player player = actorManager.getPlayer(command.playerId);
-            if (player != null) {
-                if(Objects.equals(command.commandString, "SHOOT")){
-                    Actor arrow = new Arrow(300,player.getX(),player.getY()+70,30,30);
-                    actorManager.addActor(arrow);
-                    System.out.println(player.getPlayerId()+"wants to shoot");
-                }
-                else{
-                    player.move(command.commandString);
-
-                }
-            }
-        }
-    }
-
-    public void changeWorld(String worldName) throws IOException {
-        if (worldManager.setActiveWorld(worldName)) {
-            World world = worldManager.getActiveWorld();
-            if (world == null) {
-                return;
-            }
-
-            List<Integer> currentPlayerIds = new ArrayList<>();
-            for (ClientConnection cc : connectedClients) {
-                currentPlayerIds.add(cc.getPlayerId());
-            }
-
-            for (int pId : currentPlayerIds) {
-                world.getActorManager().createPlayer(pId, 50.0, 50.0);
-            }
-
-            broadcastMessage(ServerMessages.SET_GAME_SCENE + worldName);
-
-            for (ClientConnection cc : connectedClients) {
-                sendFullWorldStateToPlayer(cc);
-            }
-        }
-    }
 
     private static class ClientCommand {
         int playerId;
@@ -356,7 +196,7 @@ public class Server implements Runnable {
             try {
                 if (socket != null && !socket.isClosed()) socket.close();
             } catch (IOException e) { /* ignore */ }
-            removeClient(this);
+            //removeClientServer(this);
         }
 
 
@@ -381,8 +221,67 @@ public class Server implements Runnable {
     //end goal is having an array of Game class objects all of which are different games with different maps
     private class Game implements Runnable {
 
+        private List<ClientConnection> connectedClients;
+        private WorldManager worldManager;
+        private ConcurrentLinkedQueue<ClientCommand> commandQueue; //in game
+        public boolean gameHasStarted = false;
+
+        public Game()
+        {
+            this.connectedClients = new CopyOnWriteArrayList<>();
+            this.worldManager = new WorldManager();
+            worldManager.initializeDefaultWorlds();
+            commandQueue = new ConcurrentLinkedQueue<>();
+        }
+
+        public void addPlayer(Socket clientSocket, int newPlayerId)
+        {
+            if(connectedClients.size()<2)
+            try {
+                ClientConnection clientConnection = new ClientConnection(clientSocket, newPlayerId, commandQueue);
+                connectedClients.add(clientConnection);
+                clientConnection.start();
+                clientConnection.sendMessage(ServerMessages.PLAYER_ID + newPlayerId);
+            }
+            catch(IOException e)
+            {
+                System.err.println(e.getMessage());
+            }
+        }
+
         @Override
         public void run(){
+
+
+
+            World activeWorld = worldManager.getActiveWorld();
+            if (activeWorld == null) {
+                if (!worldManager.setActiveWorld("Level2")) {
+                    return;
+                }
+                activeWorld = worldManager.getActiveWorld();
+            }
+
+            for (ClientConnection clientConnection : new ArrayList<>(connectedClients)) { // Iterate a copy
+                if (activeWorld.getActorManager().getPlayer(clientConnection.getPlayerId()) == null) {
+                    Player player = activeWorld.getActorManager().createPlayer(
+                            clientConnection.getPlayerId(),
+                            100.0 + (clientConnection.getPlayerId() * 60),
+                            100.0
+                    );
+                    if (player != null) {
+                        broadcastAddActor(player);
+                    }
+                }
+            }
+
+            broadcastMessage(ServerMessages.SET_GAME_SCENE + activeWorld.getWorldName());
+            for (ClientConnection cc : connectedClients) {
+                sendFullWorldStateToPlayer(cc);
+            }
+
+
+
             long lastTickTime = System.currentTimeMillis();
             while (gameHasStarted) {
                 long now = System.currentTimeMillis();
@@ -440,5 +339,148 @@ public class Server implements Runnable {
         private void handlePropRemoval(Prop prop) {
             System.out.println("Im deleting a prop with a type of "+prop.getPropType());
         }
+
+        private void broadcastActorStates() {
+            World activeWorld = worldManager.getActiveWorld();
+            if (activeWorld == null || activeWorld.getActorManager() == null) return;
+
+            ActorManager actorManager = activeWorld.getActorManager();
+            List<Actor> actorSnapshot = actorManager.getAllActorsServer();
+
+            if (actorSnapshot.isEmpty()) return;
+
+            for (Actor actor : actorSnapshot) {
+                Map<String, Object> replicatedState = ReplicationUtil.getReplicatedState(actor);
+                String serializedState = ReplicationUtil.serializeStateMap(replicatedState);
+
+                // Message format: UPDATE_ACTOR:<id>:<type>:<serialized_state>
+                String msg = ServerMessages.UPDATE_ACTOR +
+                        actor.getId() + ":" +
+                        actor.getType() + ":" +
+                        serializedState;
+                broadcastMessage(msg);
+            }
+        }
+
+        public void broadcastAddActor(Actor actor) {
+            Map<String, Object> replicatedState = ReplicationUtil.getReplicatedState(actor);
+            String serializedState = ReplicationUtil.serializeStateMap(replicatedState);
+
+            // Message format: ADD_ACTOR:<id>:<type>:<serialized_state>
+            String msg = ServerMessages.ADD_ACTOR +
+                    actor.getId() + ":" +
+                    actor.getType() + ":" +
+                    serializedState;
+            broadcastMessage(msg);
+        }
+
+        public void broadcastRemoveActor(int actorId) {
+            String msg = ServerMessages.REMOVE_ACTOR + actorId;
+            broadcastMessage(msg);
+        }
+
+        private void removeClientGame(ClientConnection clientConnection) {
+            if (clientConnection == null) return;
+            connectedClients.remove(clientConnection);
+
+            World activeWorld = worldManager.getActiveWorld();
+            if (activeWorld != null && activeWorld.getActorManager() != null) {
+                activeWorld.getActorManager().removeActor(clientConnection.getPlayerId());
+                broadcastRemoveActor(clientConnection.getPlayerId());
+            }
+        }
+
+        private void sendFullWorldStateToPlayer(ClientConnection newClientConn) {
+            World activeWorld = worldManager.getActiveWorld();
+            if (activeWorld == null || activeWorld.getActorManager() == null) return;
+
+            ActorManager actorManager = activeWorld.getActorManager();
+            List<Actor> allActors = actorManager.getAllActorsServer();
+
+            for (Actor actor : allActors) {
+                if (actor.getId() == newClientConn.getPlayerId() && actor instanceof Player) continue;
+
+                Map<String, Object> replicatedState = ReplicationUtil.getReplicatedState(actor);
+                String serializedState = ReplicationUtil.serializeStateMap(replicatedState);
+                String msg = ServerMessages.ADD_ACTOR +
+                        actor.getId() + ":" +
+                        actor.getType() + ":" +
+                        serializedState;
+                newClientConn.sendMessage(msg);
+            }
+        }
+        private void processClientCommands() {
+            ClientCommand command;
+            World activeWorld = worldManager.getActiveWorld();
+            if (activeWorld == null || activeWorld.getActorManager() == null) return;
+
+            ActorManager actorManager = activeWorld.getActorManager();
+            while ((command = commandQueue.poll()) != null) {
+                Player player = actorManager.getPlayer(command.playerId);
+                if (player != null) {
+                    if(Objects.equals(command.commandString, "SHOOT")){
+                        Actor arrow = new Arrow(300,player.getX(),player.getY()+70,30,30);
+                        actorManager.addActor(arrow);
+                        System.out.println(player.getPlayerId()+"wants to shoot");
+                    }
+                    else{
+                        player.move(command.commandString);
+
+                    }
+                }
+            }
+        }
+
+        public void changeWorld(String worldName) throws IOException {
+            if (worldManager.setActiveWorld(worldName)) {
+                World world = worldManager.getActiveWorld();
+                if (world == null) {
+                    return;
+                }
+
+                List<Integer> currentPlayerIds = new ArrayList<>();
+                for (ClientConnection cc : connectedClients) {
+                    currentPlayerIds.add(cc.getPlayerId());
+                }
+
+                for (int pId : currentPlayerIds) {
+                    world.getActorManager().createPlayer(pId, 50.0, 50.0);
+                }
+
+                broadcastMessage(ServerMessages.SET_GAME_SCENE + worldName);
+
+                for (ClientConnection cc : connectedClients) {
+                    sendFullWorldStateToPlayer(cc);
+                }
+            }
+        }
+
+        /**
+         * It broadcasts message to everyone, basically saying it sends message to everyone in the list of clients
+         *
+         * @param msg content of message to be sent
+         */
+        public void broadcastMessage(String msg) {
+            for (ClientConnection client : new ArrayList<>(connectedClients)) {
+                client.sendMessage(msg);
+            }
+        }
+
+        public void sendMessageToPlayer(int playerId, String msg) {
+            for (ClientConnection clientConn : connectedClients) {
+                if (clientConn.getPlayerId() == playerId) {
+                    clientConn.sendMessage(msg);
+                    return;
+                }
+            }
+        }
+        private void removeClientServer(ClientConnection clientConnection){
+            if (clientConnection == null) return;
+            connectedClients.remove(clientConnection);
+
+
+        }
     }
+
+
 }
