@@ -24,8 +24,6 @@ public class Server implements Runnable {
     private List<Thread> gameThreads;
 
 
-    private int nextPlayerId = 0; //stay
-
 
     //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
     private final int polingInterval = 30;
@@ -45,7 +43,6 @@ public class Server implements Runnable {
         this.socket = new ServerSocket(port, 50, InetAddress.ofLiteral(hostname));
         this.games = new ArrayList<>();
         this.gameThreads = new ArrayList<>();
-
 
     }
 
@@ -69,6 +66,8 @@ public class Server implements Runnable {
             throw new RuntimeException(e);
         }
 
+        //THIS BUT FOR ALL GAMES
+
         //for (ClientConnection clientConn : new ArrayList<>(connectedClients)) {
         //    clientConn.closeConnection("Server shutting down");
         //}
@@ -84,17 +83,17 @@ public class Server implements Runnable {
     public void run() {
         while (!socket.isClosed()) {
             try {
-
+                //first player
                 Game game = new Game();
                 Socket clientSocket = socket.accept();
                 System.out.println("SERVER: Client connected from " + clientSocket.getRemoteSocketAddress());
-                int newPlayerId = nextPlayerId++;
+                int newPlayerId = 0;
                 game.addPlayer(clientSocket, newPlayerId);
 
                 //second player
                 clientSocket = socket.accept();
                 System.out.println("SERVER: Client connected from " + clientSocket.getRemoteSocketAddress());
-                newPlayerId = nextPlayerId++;
+                newPlayerId = 1;
                 game.addPlayer(clientSocket, newPlayerId);
                 game.gameHasStarted=true; //start the game
                 //thread has to be here to work
@@ -196,6 +195,8 @@ public class Server implements Runnable {
             try {
                 if (socket != null && !socket.isClosed()) socket.close();
             } catch (IOException e) { /* ignore */ }
+
+            //notify server - server finds game with this - game closes connection
             //removeClientServer(this);
         }
 
@@ -241,7 +242,7 @@ public class Server implements Runnable {
                 ClientConnection clientConnection = new ClientConnection(clientSocket, newPlayerId, commandQueue);
                 connectedClients.add(clientConnection);
                 clientConnection.start();
-                clientConnection.sendMessage(ServerMessages.PLAYER_ID + newPlayerId);
+                clientConnection.sendMessage(ServerMessages.PLAYER_ID + (newPlayerId+1)); //+1 because player 1 & 2 but 0 & 1 in code
             }
             catch(IOException e)
             {
