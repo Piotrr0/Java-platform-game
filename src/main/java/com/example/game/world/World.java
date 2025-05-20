@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class World {
     private final String worldName;
-    private static ActorManager actorManager;
+    private ActorManager actorManager;
 
     public World(String worldName)
     {
@@ -21,7 +21,7 @@ public class World {
     public Actor getActorFromId(int id) {return actorManager.getActor(id);}
 
     // Server method for spawning actors
-    public static void spawnActor(Actor actorToSpawn) {actorManager.addActor(actorToSpawn); }
+    public void spawnActor(Actor actorToSpawn) {actorManager.addActor(actorToSpawn); }
 
     public void update()
     {

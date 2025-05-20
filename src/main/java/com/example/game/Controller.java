@@ -93,7 +93,7 @@ public class Controller {
     public void handleStartButton(ActionEvent actionEvent) throws IOException, ClassNotFoundException, InterruptedException {
         System.out.println("Host wants to start a game");
         if (server != null) {
-            server.finalizeGameSetupAndStart();
+            //server.finalizeGameSetupAndStart();
             //server.stopListeningForIncomingConnections();
         } else {
             System.out.println("server is null :/");
@@ -212,7 +212,6 @@ public class Controller {
             actor = new Actor(actorId, 0, 0, 0, 0,Color.BROWN);
         }
 
-a
 
         Map<String, String> stateData = ReplicationUtil.deserializeStateMap(serializedState);
         ReplicationUtil.applyReplicatedState(actor, stateData);
