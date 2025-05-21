@@ -10,8 +10,8 @@
       <Text layoutX="8.0" layoutY="56.0" strokeType="OUTSIDE" strokeWidth="0.0" text="hostname" />
       <Text layoutX="14.0" layoutY="114.0" strokeType="OUTSIDE" strokeWidth="0.0" text="port" />
       <Button fx:id="joinLobbyButton" layoutX="154.0" layoutY="142.0" mnemonicParsing="false" onAction="#joinLobby" text="Join" visible="true"/>
-      <TextField fx:id="hostnameField" layoutX="99.0" layoutY="39.0" text="192.168.0.100" />
+      <TextField fx:id="hostnameField" layoutX="99.0" layoutY="39.0" text="192.168.214.126" />
       <TextField fx:id="portField" layoutX="99.0" layoutY="97.0" text="50000" />
-      <TextField fx:id="lobbyInformation" layoutX="99.0" layoutY="175.0" prefHeight="66.0" prefWidth="149.0" text="Waiting for host to start" visible="false"/>
+      <TextField fx:id="lobbyInformation" layoutX="99.0" layoutY="175.0" prefHeight="66.0" prefWidth="200.0" text="Waiting for second player to join" visible="false"/>
    </children>
 </AnchorPane>

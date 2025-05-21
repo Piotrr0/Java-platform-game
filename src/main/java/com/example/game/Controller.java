@@ -5,8 +5,6 @@ import com.example.game.actors.ActorManager;
 import com.example.game.actors.Player;
 import com.example.game.actors.Prop;
 import com.example.game.network.ReplicationUtil;
-import com.example.game.world.World;
-import com.example.game.world.WorldFactory;
 import javafx.animation.AnimationTimer;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -14,11 +12,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -34,6 +32,9 @@ public class Controller {
 
     @FXML
     Button movingButton;
+
+    @FXML
+    Label hostnameLabel, portLabel;
 
     private Pane gamePane;
     private int localPlayerId = -1;
@@ -59,14 +60,19 @@ public class Controller {
     }
 
     public void handleHostMenuButton(ActionEvent actionEvent) throws IOException, ClassNotFoundException {
-        Parent root = FXMLLoader.load(getClass().getResource("hostMenu.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("hostMenu.fxml"));
+        Parent root = loader.load();
+        Controller controller = loader.getController(); // pobieramy instancję kontrolera vy działało
         mainStage.setScene(new Scene(root));
 
-        int port = 50000; // or any free port number you like
+        int port = 50000;
         String hostname = InetAddress.getLocalHost().getHostAddress();
         server = new Server(hostname, port);
         Thread serverThread = new Thread(server);
-        serverThread.start(); // starts the run() method in a new thread
+        serverThread.start();
+
+        controller.hostnameLabel.setText("hostname: " + hostname);
+        controller.portLabel.setText("port: " + port);
     }
 
     public void handleJoinMenuButton(ActionEvent actionEvent) throws IOException {

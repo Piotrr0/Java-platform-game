@@ -3,12 +3,12 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Text?>
+<?import javafx.scene.control.Label?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.game.Controller">
+<AnchorPane prefHeight="80.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.game.Controller">
    <children>
-      <Button fx:id="goBackToMenuButton" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#handleGoBackToMenuButton" text="Go back to menu" />
-      <Text layoutX="17.0" layoutY="87.0" strokeType="OUTSIDE" strokeWidth="0.0" text="hostname:localhost" />
-      <Text layoutX="17.0" layoutY="105.0" strokeType="OUTSIDE" strokeWidth="0.0" text="port:50000" />
-      <Button fx:id="startButton" layoutX="33.0" layoutY="116.0" mnemonicParsing="false" onAction="#handleStartButton" text="Start" />
+      <Text layoutX="17.0" layoutY="14.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Server is working!" />
+      <Label fx:id="hostnameLabel" layoutX="17.0" layoutY="30.0" text="hostname: " />
+      <Label fx:id="portLabel" layoutX="17.0" layoutY="46.0" text="Port: " />
    </children>
 </AnchorPane>
