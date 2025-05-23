@@ -6,15 +6,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ActorManager {
+    private final AtomicInteger nextId = new AtomicInteger(0);
+
     public Map<Integer, Actor> actorsById;
     private Map<Integer, Player> players;
     private Pane gamePane;
-
-
-
     private boolean isServer = false;
 
     // Server-side constructor
@@ -34,11 +33,18 @@ public class ActorManager {
     }
 
     // Server-side: Add actor
+    private int generateId() {
+        return nextId.getAndIncrement();
+    }
+
     public void addActor(Actor actor) {
         if (!isServer) {
             return;
         }
-        actorsById.put(actor.getId(), actor);
+
+        int id = generateId();
+        actor.id = id;
+        actorsById.put(id, actor);
         if (actor instanceof Player) {
             players.put(((Player) actor).getPlayerId(), (Player) actor);
         }
@@ -49,7 +55,7 @@ public class ActorManager {
         if (isServer) {
             return;
         }
-        if (actorsById.containsKey(actor.getId())) { // Actor already exists
+        if (actorsById.containsKey(actor.getId())) {
             return;
         }
 

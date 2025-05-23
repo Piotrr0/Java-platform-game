@@ -212,10 +212,10 @@ public class Controller {
             actor = new Player(actorId, 0, 0, isLocal);
         }
         else if("Prop".equals(actorType)){
-            actor = new Prop(actorId, 0, 0, 0, 0,Color.ORANGE,"Crate.png");
+            actor = new Prop(0, 0, 0, 0,Color.ORANGE,"Crate.png");
         }
         else{
-            actor = new Actor(actorId, 0, 0, 0, 0,Color.BROWN);
+            actor = new Actor(0, 0, 0, 0,Color.BROWN);
         }
 
 

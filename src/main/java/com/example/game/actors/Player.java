@@ -1,12 +1,15 @@
 package com.example.game.actors;
 
 import javafx.scene.paint.Color;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Player extends Actor {
     private int playerId;
     private boolean isLocalPlayer;
     private final double moveSpeed = 5.0;
     private final double jumpForce = -10.0;
+    private List<Arrow> arrows = new ArrayList<Arrow>();
 
     // For demonstration purposes
     protected void onRep_velocityY(double oldVelocityY)
@@ -25,7 +28,7 @@ public class Player extends Actor {
     // Server-side constructor
     public Player(int playerId, double x, double y)
     {
-        super(playerId, x, y, 50, 50);
+        super(x, y, 50, 50);
         this.type = "Player";
         this.playerId = playerId;
         this.affectedByGravity = true;
@@ -34,10 +37,9 @@ public class Player extends Actor {
     // Client-side constructor
     public Player(int playerId, double x, double y, boolean isLocalPlayer)
     {
-        super(playerId, x, y, 50, 50, isLocalPlayer ? Color.GREEN : Color.RED);
+        super(x, y, 50, 50, isLocalPlayer ? Color.GREEN : Color.RED);
         this.type = "Player";
         this.playerId = playerId;
-        this.isLocalPlayer = isLocalPlayer;
         this.affectedByGravity = true;
     }
 
@@ -83,6 +85,13 @@ public class Player extends Actor {
             default:
                 break;
         }
+    }
+
+    public Arrow Shoot()
+    {
+        Arrow arrow = new Arrow(x,y + 70,30,30);
+        arrows.add(arrow);
+        return arrow;
     }
 
     public double getMoveSpeed() {

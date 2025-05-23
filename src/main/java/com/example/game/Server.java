@@ -420,8 +420,7 @@ public class Server implements Runnable {
                 Player player = actorManager.getPlayer(command.playerId);
                 if (player != null) {
                     if(Objects.equals(command.commandString, "SHOOT")){
-                        Actor arrow = new Arrow(300,player.getX(),player.getY()+70,30,30);
-                        actorManager.addActor(arrow);
+                        actorManager.addActor(player.Shoot());
                         System.out.println(player.getPlayerId()+"wants to shoot");
                     }
                     else{

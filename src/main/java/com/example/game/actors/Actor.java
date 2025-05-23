@@ -13,6 +13,7 @@ public class Actor
     //TODO: NOW ID IS MANUAL FOR STATIC OBJECT AND AUTOMATIC FOR PLAYER. MAKE SURE IT IS ALSO AUTMATIC FOR ACTORS
     //TODO: Add Vector2D class for easier computing location and velocity
 
+    @Replicated
     protected int id = -1;
     protected String type = "Actor";
 
@@ -35,7 +36,6 @@ public class Actor
     protected double velocityY = 0;
     protected void onRep_velocityY(double oldVelocityY) {}
 
-
     protected static final double GRAVITY = 0.5;
     protected boolean affectedByGravity = false;
     protected boolean collidable = true;
@@ -47,9 +47,8 @@ public class Actor
 
 
     // Constructor for server-side actors (no graphics needed initially)
-    public Actor(int id, double x, double y, double width, double height)
+    public Actor(double x, double y, double width, double height)
     {
-        this.id = id;
         this.x = x;
         this.y = y;
         this.width = width;
@@ -57,9 +56,8 @@ public class Actor
     }
 
     // Constructor for client-side actors, used when creating/updating based on server state
-    public Actor(int id, double x, double y, double width, double height, Color color)
+    public Actor(double x, double y, double width, double height, Color color)
     {
-        this(id, x, y, width, height);
         this.color = color;
         initializeGraphics(color);
     }
