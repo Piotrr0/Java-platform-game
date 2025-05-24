@@ -7,7 +7,7 @@ import java.util.List;
 public class Player extends Actor {
     private int playerId;
     private boolean isLocalPlayer;
-    private final double moveSpeed = 5.0;
+    private  double moveSpeed = 5.0;
     private final double jumpForce = -10.0;
     private List<Arrow> arrows = new ArrayList<Arrow>();
 
@@ -26,10 +26,10 @@ public class Player extends Actor {
     }
 
     // Server-side constructor
-    public Player(int playerId, double x, double y)
+    public Player(int playerId, double x, double y,String type)
     {
         super(x, y, 50, 50);
-        this.type = "Player";
+        this.type = type;
         this.playerId = playerId;
         this.affectedByGravity = true;
     }
@@ -49,6 +49,15 @@ public class Player extends Actor {
     public void handleCollision(Actor other) {
         super.handleCollision(other);
 
+        if(getType().equals("Enemy")){
+            if(other.getType().equals("Player")){
+                System.out.println("Enemy should kill");
+                other.isAlive = false;
+                other.toBeDeleted=true;
+            }
+        }
+
+
         // For demonstration how it works, I do not find it it useful
         if (other instanceof Player)
         {
@@ -59,6 +68,9 @@ public class Player extends Actor {
                 other.x -= 1;
             }
         }
+
+
+
     }
 
     // Server-side method to apply movement based on command
@@ -97,6 +109,13 @@ public class Player extends Actor {
     public double getMoveSpeed() {
         return moveSpeed;
     }
+
+    public void setMoveSpeed(double moveSpeed){
+        this.moveSpeed = moveSpeed;
+    }
+
+
+
 
     public double getJumpForce() {
         return jumpForce;

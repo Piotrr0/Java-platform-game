@@ -229,6 +229,50 @@ public class Server implements Runnable {
         private int score = 0;
 
 
+        /***
+         * Function adds the enemy that moves and can collide with player and arrows
+         * @param x x position of the enemy
+         * @param y y position of the player
+         * @param timeToGoLeft time in milisecconds that enemy will go in left direction
+         * @param timeToGoRightt time in milisecconds that enemy will go in right direction
+         * @param speedMovement speed of the enemy
+         * */
+        private void addEnemy(int x,int y,int timeToGoLeft,int timeToGoRightt,int speedMovement)  {
+            System.out.println("addEnemyFunctionBody");
+            //220, 290, 260, 20
+            Player enemy = new Player(12,x,y,"Enemy");
+            World activeWorld = worldManager.getActiveWorld();
+            ActorManager actorManager = activeWorld.getActorManager();
+            actorManager.addActor(enemy);
+
+
+            //Make enemy run on separate thread
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+
+                    enemy.setMoveSpeed(speedMovement);
+                    //Move as long as enemy is alive
+                    while(enemy.isAlive){
+                        System.out.println("Enemy is still alive!");
+                        try {
+                            System.out.println("Im moving");
+                            enemy.move("MOVE_RIGHT");
+                            Thread.currentThread().sleep(timeToGoLeft);
+                            enemy.move("MOVE_LEFT");
+                            Thread.currentThread().sleep(timeToGoRightt);
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    System.out.println("Enemy is dead!");
+
+                }
+            }).start();
+
+
+        }
+
         public Game()
         {
             this.connectedClients = new CopyOnWriteArrayList<>();
@@ -284,6 +328,8 @@ public class Server implements Runnable {
             }
 
 
+
+            addEnemy(300,290,1500,1500,1);
 
             long lastTickTime = System.currentTimeMillis();
             while (gameHasStarted) {

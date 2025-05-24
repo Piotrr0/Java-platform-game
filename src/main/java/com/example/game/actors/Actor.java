@@ -45,6 +45,7 @@ public class Actor
 
     protected Color color;
 
+    public boolean isAlive = true;
 
     // Constructor for server-side actors (no graphics needed initially)
     public Actor(double x, double y, double width, double height)
@@ -137,12 +138,21 @@ public class Actor
             if(other.getType()=="Crate"){
                 other.toBeDeleted = true;
             }
+            else if(other.getType().equals("Enemy")){
+                //Make enemy die
+                other.isAlive  = false;
+                other.toBeDeleted = true;
+            }
         }
-        //If a player is colliding with a coin
+
         else if(this.getType()=="Player"){
             if(other.getType()=="Coin"){
                 other.toBeDeleted = true;
-
+            }
+            else if(other.getType().equals("Enemy")){
+                System.out.println("Enemy should kill a client");
+                toBeDeleted = true;
+                isAlive = false;
             }
         }
 

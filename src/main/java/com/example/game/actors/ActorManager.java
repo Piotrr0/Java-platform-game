@@ -123,7 +123,7 @@ public class ActorManager {
     // Server-side method to create a player
     public Player createPlayer(int playerId, double x, double y) {
         if (!isServer) return null;
-        Player player = new Player(playerId, x, y);
+        Player player = new Player(playerId, x, y,"Player");
         addActor(player);
         return player;
     }
