@@ -27,6 +27,8 @@ public class WorldFactory
 
         Actor obstacle1 = new Actor(200, 200, 50, 50);
         actorManager.addActor(obstacle1);
+
+
     }
 
     private static void setupLevel2(World world) {
@@ -47,6 +49,10 @@ public class WorldFactory
         Actor obstacle4 = new Actor(220, 290, 260, 20);
         actorManager.addActor(obstacle4);
 
+        //coin for testing purposes
+        Actor coin = new Prop(220, 230, 50, 50,"Coin");
+        actorManager.addActor(coin);
+
         //third row
         Actor obstacle5 = new Actor(0, 200, 100, 20);
         actorManager.addActor(obstacle5);
@@ -54,7 +60,7 @@ public class WorldFactory
         Actor obstacle6 = new Actor(600, 200, 100, 20);
         actorManager.addActor(obstacle6);
 
-        Actor chest = new Prop(600, 150, 50, 50,"chest");
+        Actor chest = new Prop(600, 150, 50, 50,"Crate");
         actorManager.addActor(chest);
     }
 }

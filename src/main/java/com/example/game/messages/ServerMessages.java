@@ -17,4 +17,7 @@ public class ServerMessages
 
     // Format: REMOVE_ACTOR:actorId
     public static final String REMOVE_ACTOR = "REMOVE_ACTOR:";
+
+    //Format: REFRESH_SCORE:newScore
+    public static final String REFRESH_SCORE = "REFRESH_SCORE:";
 }

@@ -17,6 +17,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -58,6 +60,8 @@ public class Controller {
     public static void setMainStage(Stage stage) {
         mainStage = stage;
     }
+
+    Text topLeftText;
 
     public void handleHostMenuButton(ActionEvent actionEvent) throws IOException, ClassNotFoundException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("hostMenu.fxml"));
@@ -106,6 +110,10 @@ public class Controller {
         }
     }
 
+    public void refreshScoreText(String msg){
+        topLeftText.setText(msg);
+    }
+
     private void startGameLoop() {
         if (gameLoop == null) {
             gameLoop = new AnimationTimer() {
@@ -127,6 +135,8 @@ public class Controller {
         }
     }
 
+
+
     public void setupGameScene(String sceneName) {
         gamePane = new Pane();
         gamePane.setStyle("-fx-background-color: black;");
@@ -141,6 +151,12 @@ public class Controller {
         mainStage.show();
 
         gamePane.requestFocus();
+
+        // Create and style the text
+        topLeftText = new Text(10, 20, "Score: 0"); // X=10, Y=20 (top-left)
+        topLeftText.setFill(Color.WHITE); // Set text color
+        topLeftText.setFont(Font.font("Arial", 16)); // Set font and size
+        gamePane.getChildren().add(topLeftText);
 
         startGameLoop();
 
@@ -211,9 +227,13 @@ public class Controller {
         if ("Player".equals(actorType)) {
             actor = new Player(actorId, 0, 0, isLocal);
         }
-        else if("Prop".equals(actorType)){
-            actor = new Prop(0, 0, 0, 0,Color.ORANGE,"Crate.png");
+        else if("Crate".equals(actorType)){
+            actor = new Prop(0, 0, 0, 0,Color.ORANGE,"Crate.png","Crate");
         }
+        else if("Coin".equals(actorType)){
+            actor = new Prop(0, 0, 0, 0,Color.BLUE,"coin_spin.gif","Coin");
+        }
+
         else{
             actor = new Actor(0, 0, 0, 0,Color.BROWN);
         }

@@ -8,18 +8,16 @@ import javafx.scene.shape.Rectangle;
 import java.net.URISyntaxException;
 
 public class Prop extends Actor {
-    //This variable stores the name of prop e.g Chest or Ball or a Coin. It is useful when we want to decide what to do based on fact what it is.
-    private String propType = "";
 
+    //Server-side prop initialization
     public Prop(double x, double y, double width, double height, String propType) {
         super(x, y, width, height);
-        this.type = "Prop";
-        this.propType = propType;
+        this.type = propType;
     }
 
     // Constructor for client-side actors, used when creating/updating based on server state
-    public Prop(double x, double y, double width, double height, Color color, String textureFileName) {
-        this(x, y, width, height, "");
+    public  Prop(double x, double y, double width, double height, Color color, String textureFileName,String proptype) {
+        this(x, y, width, height, proptype);
         this.color = color;
         initializeGraphics(textureFileName);
     }
@@ -46,9 +44,7 @@ public class Prop extends Actor {
     }
 
 
-    public String getPropType() {
-        return this.propType;
-    }
+
 
 
 }

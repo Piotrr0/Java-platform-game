@@ -98,7 +98,7 @@ public class Actor
             graphicalRepresentation.setY(y);
             graphicalRepresentation.setWidth(width);
             graphicalRepresentation.setHeight(height);
-            if (this.color != null && graphicalRepresentation.getFill() != this.color && !this.getType().equals("Prop")) {
+            if (this.color != null && graphicalRepresentation.getFill() != this.color && !this.getType().equals("Crate") &&!this.getType().equals("Coin")) {
                 graphicalRepresentation.setFill(this.color);
             }
         }
@@ -134,10 +134,18 @@ public class Actor
         //If one of the colliding objects was arrow, we want to flag the arrow to be deleted.
         if(this.getType()=="Arrow"){
             this.toBeDeleted = true;
-            if(other.getType()=="Prop"){
+            if(other.getType()=="Crate"){
                 other.toBeDeleted = true;
             }
         }
+        //If a player is colliding with a coin
+        else if(this.getType()=="Player"){
+            if(other.getType()=="Coin"){
+                other.toBeDeleted = true;
+
+            }
+        }
+
     };
 
     public Rectangle2D getBounds() {

@@ -14,7 +14,10 @@ public class World {
     {
         this.worldName = worldName;
         actorManager = new ActorManager();
+
     }
+
+
 
     public String getWorldName() { return worldName; }
     public ActorManager getActorManager() { return actorManager; }

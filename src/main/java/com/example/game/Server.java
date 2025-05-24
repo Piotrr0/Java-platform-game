@@ -226,6 +226,8 @@ public class Server implements Runnable {
         private WorldManager worldManager;
         private ConcurrentLinkedQueue<ClientCommand> commandQueue; //in game
         public boolean gameHasStarted = false;
+        private int score = 0;
+
 
         public Game()
         {
@@ -325,7 +327,7 @@ public class Server implements Runnable {
                 int idOfActor = worldManager.getActiveWorld().getActorFromId(worldManager.getActiveWorld().getActorManager().getAllActorsServer().get(i).getId()).getId();
                 boolean shouldBeDeleted = worldManager.getActiveWorld().getActorFromId(actor.getId()).isToBeDeleted();
                 if(shouldBeDeleted){
-                    if(actor.getType()=="Prop"){
+                    if(actor.getType()=="Crate"|| actor.getType()=="Coin"){
                         handlePropRemoval((Prop) actor);
                     }
                     worldManager.getActiveWorld().getActorManager().removeActor(idOfActor);
@@ -338,7 +340,21 @@ public class Server implements Runnable {
          * This function handles the prop removal, based on type of prop we can decide what to do, e.g if we destroy the chest we can increase points or something.
          * **/
         private void handlePropRemoval(Prop prop) {
-            System.out.println("Im deleting a prop with a type of "+prop.getPropType());
+            System.out.println("Im deleting a prop with a type of "+prop.getType());
+            //If we remove the crate we want to make it drop a coin
+            if(prop.getType().equals("Crate")){
+                System.out.println("I should create a coin");
+                World activeWorld = worldManager.getActiveWorld();
+                ActorManager actorManager = activeWorld.getActorManager();
+                Actor coin = new Prop(prop.getX(),prop.getY(),prop.getWidth(),prop.getHeight(),"Coin");
+                actorManager.addActor(coin);
+            }
+            //We want to handle logic of collecting a point
+            else if(prop.getType().equals("Coin")){
+                System.out.println("I should inform clients to refresh the score");
+                score++;
+                broadcastMessage("REFRESH_SCORE:"+score);
+            }
         }
 
         private void broadcastActorStates() {

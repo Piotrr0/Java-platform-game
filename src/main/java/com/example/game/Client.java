@@ -121,6 +121,12 @@ public class Client{
             }
         }
 
+        //We just decide to refresh a score
+        private void handleRefreshScore(String msg) {
+            int scoreNumber = Integer.parseInt(msg.substring(msg.indexOf(":") + 1));
+            controller.refreshScoreText("Score: "+scoreNumber);
+        }
+
         /**
          * This function is called by other function and it is used to handle a message from request
          *
@@ -140,7 +146,13 @@ public class Client{
             } else if (msg.equals(ServerMessages.HAS_GAME_CHANGED)) {
                 handleGameHasChanged(msg);
             }
+            else if(msg.startsWith(ServerMessages.REFRESH_SCORE)){
+                handleRefreshScore(msg);
+            }
+
         }
+
+
 
         @Override
         public void run() {
