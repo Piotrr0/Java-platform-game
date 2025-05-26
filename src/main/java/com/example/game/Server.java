@@ -66,14 +66,31 @@ public class Server implements Runnable {
             throw new RuntimeException(e);
         }
 
-        //THIS BUT FOR ALL GAMES
+        for(int i=0; i<games.size(); i++)
+        {
+            for(ClientConnection clientConn : new ArrayList<>(games.get(i).connectedClients))
+            {
+                clientConn.closeConnection("Server shutting down");
+            }
+            games.get(i).connectedClients.clear();
+            games.get(i).commandQueue.clear();
+            gameThreads.get(i).interrupt();
+        }
+        games.clear();
+        gameThreads.clear();
+    }
 
-        //for (ClientConnection clientConn : new ArrayList<>(connectedClients)) {
-        //    clientConn.closeConnection("Server shutting down");
-        //}
-
-        //connectedClients.clear();
-        //commandQueue.clear();
+    void removeClientServer(ClientConnection clientConn) {
+        for (int i = 0; i < games.size(); i++) {
+            //finding game with client
+            for (ClientConnection client : new ArrayList<>(games.get(i).connectedClients)) {
+                if(clientConn == client)
+                {
+                    //removing client
+                    games.get(i).removeClientGame(clientConn);
+                }
+            }
+        }
     }
 
 
@@ -103,24 +120,6 @@ public class Server implements Runnable {
                 gameThreads.add(gameThread);
                 games.add(game);
 
-
-
-                /*
-                if (gameHasStarted) {
-                    World activeWorld = worldManager.getActiveWorld();
-                    if (activeWorld != null) {
-                        Player player = activeWorld.getActorManager().createPlayer(newPlayerId, 100, 100);
-                        if (player != null) {
-                            clientConnection.sendMessage(ServerMessages.SET_GAME_SCENE + activeWorld.getWorldName());
-                            broadcastAddActor(player);
-                            sendFullWorldStateToPlayer(clientConnection);
-
-
-                        }
-                    }
-                }
-
-                 */
 
             } // TODO: I DO NOT KNOW BUT WITHOUT THIS IT DOESN'T WORK
             catch (SocketTimeoutException e) {
@@ -197,7 +196,7 @@ public class Server implements Runnable {
             } catch (IOException e) { /* ignore */ }
 
             //notify server - server finds game with this - game closes connection
-            //removeClientServer(this);
+            removeClientServer(this);
         }
 
 
@@ -535,12 +534,6 @@ public class Server implements Runnable {
                     return;
                 }
             }
-        }
-        private void removeClientServer(ClientConnection clientConnection){
-            if (clientConnection == null) return;
-            connectedClients.remove(clientConnection);
-
-
         }
     }
 

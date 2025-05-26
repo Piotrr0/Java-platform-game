@@ -26,7 +26,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) throws IOException {
-        System.out.println("Hi I am a client!");
+        //System.out.println("Hi I am a client!");
         Parent root = FXMLLoader.load(getClass().getResource("menu.fxml"));
         Controller.setMainStage(primaryStage);
         primaryStage.setTitle("Platform game");

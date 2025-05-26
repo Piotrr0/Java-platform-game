@@ -3,7 +3,9 @@ package com.example.game;
 import com.example.game.messages.ServerMessages;
 import javafx.application.Platform;
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.*;
 
 /**
@@ -27,14 +29,18 @@ public class Client{
     }
 
     public Client(String serverIPAddress, int serverPort, Controller controller) throws IOException {
-        this.clientSocket = new Socket(serverIPAddress, serverPort);
-        this.controller = controller;
-        this.out = new DataOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
-        this.in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
 
-        ClientReceiver clientReceiver = new ClientReceiver();
-        Thread clientReceiverThread = new Thread(clientReceiver);
-        clientReceiverThread.start();
+            SocketAddress address = new InetSocketAddress(serverIPAddress, serverPort);
+            this.clientSocket = new Socket();
+            this.clientSocket.connect(address, 5000); // timeout 5s
+
+            this.controller = controller;
+            this.out = new DataOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
+            this.in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
+
+            ClientReceiver clientReceiver = new ClientReceiver();
+            Thread clientReceiverThread = new Thread(clientReceiver);
+            clientReceiverThread.start();
     }
 
     public void sendDataToServer(String msg) throws IOException {

@@ -23,6 +23,7 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.util.Map;
 
 public class Controller {
@@ -87,11 +88,13 @@ public class Controller {
     public void joinLobby(ActionEvent actionEvent) throws IOException {
         String hostname = hostnameField.getText();
         int port = Integer.parseInt(portField.getText());
-
-        Main.currentClient = new Client(hostname, port, this);
-
-        joinLobbyButton.setVisible(false);
-        lobbyInformation.setVisible(true);
+        try {
+            Main.currentClient = new Client(hostname, port, this);
+            joinLobbyButton.setVisible(false);
+            lobbyInformation.setVisible(true);
+        } catch (SocketTimeoutException e) {
+            System.out.println("Połączenie nie powiodło się: timeout");
+        }
     }
 
 
