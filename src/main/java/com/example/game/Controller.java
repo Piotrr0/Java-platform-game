@@ -226,9 +226,10 @@ public class Controller {
         }
 
         Actor actor;
-        boolean isLocal = (actorId == localPlayerId);
+        boolean isLocal = (actorId == localPlayerId); //this doesn't work... (ALWAYS returns false)
         if ("Player".equals(actorType)) {
-            actor = new Player(actorId, 0, 0, isLocal);
+            actor = new Player(actorId, 0, 0, true);
+            System.out.println("actor id: " + actorId + " lokal: " + localPlayerId);
         }
         else if("Crate".equals(actorType)){
             actor = new Prop(0, 0, 0, 0,Color.ORANGE,"Crate.png","Crate");
@@ -236,7 +237,9 @@ public class Controller {
         else if("Coin".equals(actorType)){
             actor = new Prop(0, 0, 0, 0,Color.BLUE,"coin_spin.gif","Coin");
         }
-
+        else if("Enemy".equals(actorType)){
+            actor = new Player(actorId, 0, 0, false);
+        }
         else{
             actor = new Actor(0, 0, 0, 0,Color.BROWN);
         }

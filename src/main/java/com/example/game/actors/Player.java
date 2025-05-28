@@ -1,6 +1,11 @@
 package com.example.game.actors;
 
+import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.ImagePattern;
+import javafx.scene.shape.Rectangle;
+
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,11 +22,12 @@ public class Player extends Actor {
         //System.out.println("old:" + oldVelocityY + "new:" + this.velocityY);
         if(this.velocityY > 0)
         {
-            this.color = Color.MAGENTA;
+            //this.color = Color.MAGENTA;
         }
         else
         {
-            this.color = Color.GREEN;
+            //this.color = Color.GREEN;
+
         }
     }
 
@@ -37,10 +43,39 @@ public class Player extends Actor {
     // Client-side constructor
     public Player(int playerId, double x, double y, boolean isLocalPlayer)
     {
-        super(x, y, 50, 50, isLocalPlayer ? Color.GREEN : Color.RED);
+        //local player has to have his color declared or texture given, or it doesn't work
+        super(x, y, 50, 50); //if no texture then color here (both don't work at once)
         this.type = "Player";
         this.playerId = playerId;
         this.affectedByGravity = true;
+        if(isLocalPlayer) { //player
+            initializeGraphics("plumber.jpg");
+        }
+        else //enemy
+        {
+            initializeGraphics("tutel.png");
+        }
+    }
+
+    // Client-side methods for graphics
+    protected void initializeGraphics(String textureFileName) {
+        System.out.println("gracz powinien miec teksture: " + textureFileName);
+
+        Rectangle rectangle = new Rectangle(width, height);
+        rectangle.setX(x);
+        rectangle.setY(y);
+        try {
+            Image img = new Image(getClass().getResource("/assets/" + textureFileName).toURI().toString());
+            rectangle.setFill(new ImagePattern(img));
+        } catch (IllegalArgumentException e) {
+            System.out.println("Nie mozna zaladowac tekstury " + textureFileName);
+        } catch (URISyntaxException e) {
+            System.out.println("Nie mozna zaladowac tekstury " + textureFileName);
+        } catch (NullPointerException e) {
+            System.out.println("Nie mozna zaladowac tekstury");
+        }
+
+        this.graphicalRepresentation = rectangle;
     }
 
     public Integer getPlayerId() { return  playerId; }

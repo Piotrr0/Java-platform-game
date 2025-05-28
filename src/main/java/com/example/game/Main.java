@@ -29,6 +29,7 @@ public class Main extends Application {
         //System.out.println("Hi I am a client!");
         Parent root = FXMLLoader.load(getClass().getResource("menu.fxml"));
         Controller.setMainStage(primaryStage);
+        primaryStage.setResizable(false); //turns off window maximization - easier than centering everything
         primaryStage.setTitle("Platform game");
         primaryStage.setScene(new Scene(root));
         primaryStage.show();
