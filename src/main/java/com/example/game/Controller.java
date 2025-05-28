@@ -226,10 +226,15 @@ public class Controller {
         }
 
         Actor actor;
-        boolean isLocal = (actorId == localPlayerId); //this doesn't work... (ALWAYS returns false)
+        //this doesn't work... (ALWAYS returns false)
+        //actors always get 8 or 9 - shown in console when launching many games
+        //something has to be broken in serialization and naming id I guess
+        //localplayerid is always 1 or 2
+        boolean isLocal = (actorId == localPlayerId);
         if ("Player".equals(actorType)) {
             actor = new Player(actorId, 0, 0, true);
             System.out.println("actor id: " + actorId + " lokal: " + localPlayerId);
+
         }
         else if("Crate".equals(actorType)){
             actor = new Prop(0, 0, 0, 0,Color.ORANGE,"Crate.png","Crate");
@@ -238,7 +243,7 @@ public class Controller {
             actor = new Prop(0, 0, 0, 0,Color.BLUE,"coin_spin.gif","Coin");
         }
         else if("Enemy".equals(actorType)){
-            actor = new Player(actorId, 0, 0, false);
+            actor = new Player(actorId, 0, 0);
         }
         else{
             actor = new Actor(0, 0, 0, 0,Color.BROWN);

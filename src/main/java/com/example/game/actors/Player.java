@@ -45,7 +45,7 @@ public class Player extends Actor {
     {
         //local player has to have his color declared or texture given, or it doesn't work
         super(x, y, 50, 50); //if no texture then color here (both don't work at once)
-        this.type = "Player";
+        this.type = "Player"; //I don't think this does anything - client doesn't care about type i think
         this.playerId = playerId;
         this.affectedByGravity = true;
         if(isLocalPlayer) { //player
@@ -55,6 +55,17 @@ public class Player extends Actor {
         {
             initializeGraphics("tutel.png");
         }
+    }
+
+    //enemy constructor client-side
+    public Player(int playerId, double x, double y)
+    {
+        //local player has to have his color declared or texture given, or it doesn't work
+        super(x, y, 50, 50); //if no texture then color here (both don't work at once)
+        this.type = "Enemy";
+        this.playerId = playerId;
+        this.affectedByGravity = true;
+        initializeGraphics("tutel.png");
     }
 
     // Client-side methods for graphics
