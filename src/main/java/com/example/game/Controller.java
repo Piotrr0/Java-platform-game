@@ -44,6 +44,7 @@ public class Controller {
 
     private ActorManager actorManager;
     private String currentLevelName;
+    boolean firstPlayer = true; //first player added is mario, second is luigi, mitigates problem above
 
     /*
         IT stores a server object, if you wonder why the fuck this is static it is because
@@ -231,10 +232,19 @@ public class Controller {
         //something has to be broken in serialization and naming id I guess
         //localplayerid is always 1 or 2
         boolean isLocal = (actorId == localPlayerId);
-        if ("Player".equals(actorType)) {
-            actor = new Player(actorId, 0, 0, true);
-            System.out.println("actor id: " + actorId + " lokal: " + localPlayerId);
 
+        //for some reason same assets are loaded multiple times (seen in console)
+        if ("Player".equals(actorType)) {
+            System.out.println(firstPlayer);
+            if(firstPlayer) {
+                actor = new Player(actorId, 0, 0, true);
+                firstPlayer = false;
+            }
+            else {
+                actor = new Player(actorId, 0, 0, false);
+                firstPlayer = true;
+            }
+            System.out.println("actor id: " + actorId + " lokal: " + localPlayerId);
         }
         else if("Crate".equals(actorType)){
             actor = new Prop(0, 0, 0, 0,Color.ORANGE,"Crate.png","Crate");

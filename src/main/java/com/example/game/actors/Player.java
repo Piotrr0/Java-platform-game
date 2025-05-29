@@ -41,19 +41,19 @@ public class Player extends Actor {
     }
 
     // Client-side constructor
-    public Player(int playerId, double x, double y, boolean isLocalPlayer)
+    public Player(int playerId, double x, double y, boolean firstPlayer)
     {
         //local player has to have his color declared or texture given, or it doesn't work
         super(x, y, 50, 50); //if no texture then color here (both don't work at once)
         this.type = "Player"; //I don't think this does anything - client doesn't care about type i think
         this.playerId = playerId;
         this.affectedByGravity = true;
-        if(isLocalPlayer) { //player
-            initializeGraphics("plumber.jpg");
+        if(firstPlayer) { //mario
+            initializeGraphics("mario.png");
         }
-        else //enemy
+        else //luigi
         {
-            initializeGraphics("tutel.png");
+            initializeGraphics("luigi.png");
         }
     }
 
