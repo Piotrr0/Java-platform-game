@@ -11,17 +11,6 @@ public class Enemy extends Actor {
         this.collidable = true;
     }
 
-    // Client-side constructor
-    public Enemy(double x, double y, boolean isClientSide) {
-        super(x, y, 50, 50);
-        this.type = "Enemy";
-        this.affectedByGravity = true;
-        this.collidable = true;
-        if (isClientSide) {
-            initializeGraphics("tutel.png");
-        }
-    }
-
     // Client-side constructor with specific texture (optional, if needed)
     public Enemy(double x, double y, String textureFileName) {
         super(x, y, 50, 50);
