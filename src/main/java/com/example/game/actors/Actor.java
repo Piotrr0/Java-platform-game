@@ -1,20 +1,22 @@
 package com.example.game.actors;
 
 import com.example.game.network.Replicated;
+import javafx.scene.image.Image;
+import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
 import javafx.scene.layout.Pane;
 import javafx.geometry.Rectangle2D;
 
+import java.net.URISyntaxException;
 import java.util.List;
 
 public class Actor
 {
-    //TODO: NOW ID IS MANUAL FOR STATIC OBJECT AND AUTOMATIC FOR PLAYER. MAKE SURE IT IS ALSO AUTMATIC FOR ACTORS
-    //TODO: Add Vector2D class for easier computing location and velocity
-
     @Replicated
     protected int id = -1;
+
+    @Replicated
     protected String type = "Actor";
 
     @Replicated
@@ -28,7 +30,6 @@ public class Actor
     @Replicated
     //Flag that determines if actor should be removed with next tickrate
     protected boolean toBeDeleted = false;
-
 
     protected double velocityX = 0;
 
@@ -74,10 +75,16 @@ public class Actor
 
     // Client-side methods for graphics, instead of color we generate a texture
     protected void initializeGraphics(String path) {
-        Rectangle rectangle = new Rectangle(width, height, color);
+        Rectangle rectangle = new Rectangle(width, height);
         rectangle.setX(x);
         rectangle.setY(y);
-        this.color = Color.PINK;
+        try {
+            Image img = new Image(getClass().getResource("/assets/" + path).toURI().toString());
+            rectangle.setFill(new ImagePattern(img));
+        } catch (IllegalArgumentException | URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
         this.graphicalRepresentation = rectangle;
     }
 

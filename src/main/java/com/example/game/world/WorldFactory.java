@@ -2,6 +2,7 @@ package com.example.game.world;
 
 import com.example.game.actors.Actor;
 import com.example.game.actors.ActorManager;
+import com.example.game.actors.Enemy;
 import com.example.game.actors.Prop;
 import javafx.scene.paint.Color;
 
@@ -62,5 +63,12 @@ public class WorldFactory
 
         Actor chest = new Prop(600, 150, 50, 50,"Crate");
         actorManager.addActor(chest);
+
+        Enemy enemyLevel2 = new Enemy(100, 430);
+        enemyLevel2.setMoveSpeed(1.2);
+        actorManager.addActor(enemyLevel2);
+
+        Enemy enemyLevel2_2 = new Enemy(400, 440);
+        actorManager.addActor(enemyLevel2_2);
     }
 }

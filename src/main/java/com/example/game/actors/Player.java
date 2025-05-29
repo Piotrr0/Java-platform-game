@@ -16,21 +16,6 @@ public class Player extends Actor {
     private final double jumpForce = -10.0;
     private List<Arrow> arrows = new ArrayList<Arrow>();
 
-    // For demonstration purposes
-    protected void onRep_velocityY(double oldVelocityY)
-    {
-        //System.out.println("old:" + oldVelocityY + "new:" + this.velocityY);
-        if(this.velocityY > 0)
-        {
-            //this.color = Color.MAGENTA;
-        }
-        else
-        {
-            //this.color = Color.GREEN;
-
-        }
-    }
-
     // Server-side constructor
     public Player(int playerId, double x, double y,String type)
     {
@@ -57,38 +42,6 @@ public class Player extends Actor {
         }
     }
 
-    //enemy constructor client-side
-    public Player(int playerId, double x, double y)
-    {
-        //local player has to have his color declared or texture given, or it doesn't work
-        super(x, y, 50, 50); //if no texture then color here (both don't work at once)
-        this.type = "Enemy";
-        this.playerId = playerId;
-        this.affectedByGravity = true;
-        initializeGraphics("tutel.png");
-    }
-
-    // Client-side methods for graphics
-    protected void initializeGraphics(String textureFileName) {
-        System.out.println("gracz powinien miec teksture: " + textureFileName);
-
-        Rectangle rectangle = new Rectangle(width, height);
-        rectangle.setX(x);
-        rectangle.setY(y);
-        try {
-            Image img = new Image(getClass().getResource("/assets/" + textureFileName).toURI().toString());
-            rectangle.setFill(new ImagePattern(img));
-        } catch (IllegalArgumentException e) {
-            System.out.println("Nie mozna zaladowac tekstury " + textureFileName);
-        } catch (URISyntaxException e) {
-            System.out.println("Nie mozna zaladowac tekstury " + textureFileName);
-        } catch (NullPointerException e) {
-            System.out.println("Nie mozna zaladowac tekstury");
-        }
-
-        this.graphicalRepresentation = rectangle;
-    }
-
     public Integer getPlayerId() { return  playerId; }
 
     @Override
@@ -103,7 +56,6 @@ public class Player extends Actor {
             }
         }
 
-
         // For demonstration how it works, I do not find it it useful
         if (other instanceof Player)
         {
@@ -114,9 +66,6 @@ public class Player extends Actor {
                 other.x -= 1;
             }
         }
-
-
-
     }
 
     // Server-side method to apply movement based on command
@@ -159,9 +108,6 @@ public class Player extends Actor {
     public void setMoveSpeed(double moveSpeed){
         this.moveSpeed = moveSpeed;
     }
-
-
-
 
     public double getJumpForce() {
         return jumpForce;

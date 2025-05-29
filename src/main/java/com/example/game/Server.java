@@ -227,51 +227,6 @@ public class Server implements Runnable {
         public boolean gameHasStarted = false;
         private int score = 0;
 
-
-        /***
-         * Function adds the enemy that moves and can collide with player and arrows
-         * @param x x position of the enemy
-         * @param y y position of the player
-         * @param timeToGoLeft time in milisecconds that enemy will go in left direction
-         * @param timeToGoRightt time in milisecconds that enemy will go in right direction
-         * @param speedMovement speed of the enemy
-         * */
-        private void addEnemy(int x,int y,int timeToGoLeft,int timeToGoRightt,int speedMovement)  {
-            System.out.println("addEnemyFunctionBody");
-            //220, 290, 260, 20
-            Player enemy = new Player(12,x,y,"Enemy");
-            World activeWorld = worldManager.getActiveWorld();
-            ActorManager actorManager = activeWorld.getActorManager();
-            actorManager.addActor(enemy);
-
-
-            //Make enemy run on separate thread
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-
-                    enemy.setMoveSpeed(speedMovement);
-                    //Move as long as enemy is alive
-                    while(enemy.isAlive){
-                        System.out.println("Enemy is still alive!");
-                        try {
-                            System.out.println("Im moving");
-                            enemy.move("MOVE_RIGHT");
-                            Thread.currentThread().sleep(timeToGoLeft);
-                            enemy.move("MOVE_LEFT");
-                            Thread.currentThread().sleep(timeToGoRightt);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                    System.out.println("Enemy is dead!");
-
-                }
-            }).start();
-
-
-        }
-
         public Game()
         {
             this.connectedClients = new CopyOnWriteArrayList<>();
@@ -296,10 +251,7 @@ public class Server implements Runnable {
         }
 
         @Override
-        public void run(){
-
-
-
+        public void run() {
             World activeWorld = worldManager.getActiveWorld();
             if (activeWorld == null) {
                 if (!worldManager.setActiveWorld("Level2")) {
@@ -321,14 +273,20 @@ public class Server implements Runnable {
                 }
             }
 
+            if (activeWorld != null && activeWorld.getActorManager() != null) {
+                List<Actor> initialActors = activeWorld.getActorManager().getAllActorsServer(); // Not optimal
+                for (Actor actor : initialActors) {
+                    if (actor instanceof Enemy) {
+                        Enemy worldEnemy = (Enemy) actor;
+                        worldEnemy.startAI();
+                    }
+                }
+            }
+
             broadcastMessage(ServerMessages.SET_GAME_SCENE + activeWorld.getWorldName());
             for (ClientConnection cc : connectedClients) {
                 sendFullWorldStateToPlayer(cc);
             }
-
-
-
-            addEnemy(300,290,1500,1500,1);
 
             long lastTickTime = System.currentTimeMillis();
             while (gameHasStarted) {
@@ -536,6 +494,4 @@ public class Server implements Runnable {
             }
         }
     }
-
-
 }

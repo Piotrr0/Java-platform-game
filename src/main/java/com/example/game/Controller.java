@@ -1,9 +1,6 @@
 package com.example.game;
 
-import com.example.game.actors.Actor;
-import com.example.game.actors.ActorManager;
-import com.example.game.actors.Player;
-import com.example.game.actors.Prop;
+import com.example.game.actors.*;
 import com.example.game.network.ReplicationUtil;
 import javafx.animation.AnimationTimer;
 import javafx.event.ActionEvent;
@@ -253,7 +250,7 @@ public class Controller {
             actor = new Prop(0, 0, 0, 0,Color.BLUE,"coin_spin.gif","Coin");
         }
         else if("Enemy".equals(actorType)){
-            actor = new Player(actorId, 0, 0);
+            actor = new Enemy(0, 0,"tutel.png");
         }
         else{
             actor = new Actor(0, 0, 0, 0,Color.BROWN);
