@@ -23,15 +23,12 @@ public class Server implements Runnable {
     private List<Game> games;
     private List<Thread> gameThreads;
 
-
-
     //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
     private final int polingInterval = 30;
 
     public int getPort() {
         return this.port;
     }
-
     public String getHostname() {
         return this.hostname;
     }
@@ -43,11 +40,7 @@ public class Server implements Runnable {
         this.socket = new ServerSocket(port, 50, InetAddress.ofLiteral(hostname));
         this.games = new ArrayList<>();
         this.gameThreads = new ArrayList<>();
-
     }
-
-
-
 
     /**
      * It makes serverSocket stop listening for new joining clients, however it will still be able to communicate
@@ -254,7 +247,7 @@ public class Server implements Runnable {
         public void run() {
             World activeWorld = worldManager.getActiveWorld();
             if (activeWorld == null) {
-                if (!worldManager.setActiveWorld("Level2")) {
+                if (!worldManager.setActiveWorld("Level1")) {
                     return;
                 }
                 activeWorld = worldManager.getActiveWorld();
@@ -344,10 +337,10 @@ public class Server implements Runnable {
          * **/
         private void handlePropRemoval(Prop prop) {
             System.out.println("Im deleting a prop with a type of "+prop.getType());
-            //If we remove the crate we want to make it drop a coin
+            World activeWorld = worldManager.getActiveWorld();
+
             if(prop.getType().equals("Crate")){
                 System.out.println("I should create a coin");
-                World activeWorld = worldManager.getActiveWorld();
                 ActorManager actorManager = activeWorld.getActorManager();
                 Actor coin = new Prop(prop.getX(),prop.getY(),prop.getWidth(),prop.getHeight(),"Coin");
                 actorManager.addActor(coin);
@@ -355,8 +348,15 @@ public class Server implements Runnable {
             //We want to handle logic of collecting a point
             else if(prop.getType().equals("Coin")){
                 System.out.println("I should inform clients to refresh the score");
-                score++;
-                broadcastMessage("REFRESH_SCORE:"+score);
+                if(activeWorld.checkAndIncrementCoinCount())
+                {
+                    try {
+                        changeWorld(activeWorld.getNextLevelName());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                broadcastMessage("REFRESH_SCORE:"+activeWorld.getCollectedCoins());
             }
         }
 
@@ -464,6 +464,14 @@ public class Server implements Runnable {
 
                 for (int pId : currentPlayerIds) {
                     world.getActorManager().createPlayer(pId, 50.0, 50.0);
+                }
+
+                List<Actor> actorsInNewWorld = worldManager.getActiveWorld().getActorManager().getAllActorsServer();
+                for (Actor actor : actorsInNewWorld) {
+                    if (actor instanceof Enemy) {
+                        Enemy enemy = (Enemy) actor;
+                        enemy.startAI();
+                    }
                 }
 
                 broadcastMessage(ServerMessages.SET_GAME_SCENE + worldName);

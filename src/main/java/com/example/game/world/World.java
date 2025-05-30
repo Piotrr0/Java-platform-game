@@ -10,21 +10,27 @@ public class World {
     private final String worldName;
     private ActorManager actorManager;
 
+    private final int coinThreshold = 1;
+    private int collectedCoins = 0;
+    public String nextLevelName = "Level2";
+
     public World(String worldName)
     {
         this.worldName = worldName;
         actorManager = new ActorManager();
-
     }
-
-
 
     public String getWorldName() { return worldName; }
     public ActorManager getActorManager() { return actorManager; }
     public Actor getActorFromId(int id) {return actorManager.getActor(id);}
 
-    // Server method for spawning actors
-    public void spawnActor(Actor actorToSpawn) {actorManager.addActor(actorToSpawn); }
+    public int getCollectedCoins() { return this.collectedCoins; }
+    public boolean checkAndIncrementCoinCount() {
+        collectedCoins++;
+        return collectedCoins >= coinThreshold;
+    }
+
+    public String getNextLevelName() { return nextLevelName; }
 
     public void update()
     {
