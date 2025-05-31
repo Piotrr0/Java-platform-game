@@ -10,7 +10,7 @@ public class World {
     private final String worldName;
     private ActorManager actorManager;
 
-    private final int coinThreshold = 1;
+    private int coinThreshold = 1;
     private int collectedCoins = 0;
     public String nextLevelName = "Level2";
 
@@ -36,4 +36,6 @@ public class World {
     {
         actorManager.updateServer();
     }
+    void setCoinThreshold(int coinThreshold) { this.coinThreshold = coinThreshold; }
+    void setNextLevelName(String nextLevelName) { this.nextLevelName = nextLevelName; }
 }

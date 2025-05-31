@@ -350,13 +350,17 @@ public class Server implements Runnable {
                 System.out.println("I should inform clients to refresh the score");
                 if(activeWorld.checkAndIncrementCoinCount())
                 {
+                    broadcastMessage("REFRESH_SCORE:"+activeWorld.getCollectedCoins());
                     try {
-                        changeWorld(activeWorld.getNextLevelName());
+                        String nextLevelName = activeWorld.getNextLevelName();
+                        if(nextLevelName.equals(activeWorld.getWorldName())) {
+                            return;
+                        }
+                        changeWorld(nextLevelName);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
-                broadcastMessage("REFRESH_SCORE:"+activeWorld.getCollectedCoins());
             }
         }
 

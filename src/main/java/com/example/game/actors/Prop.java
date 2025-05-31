@@ -42,9 +42,4 @@ public class Prop extends Actor {
 
         this.graphicalRepresentation = rectangle;
     }
-
-
-
-
-
 }

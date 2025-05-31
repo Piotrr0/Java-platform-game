@@ -64,11 +64,9 @@ public class WorldFactory
     }
 
     private static void setupLevel2(World world) {
-
-        // FIX
         ActorManager actorManager = world.getActorManager();
 
-        Actor ground = new Actor(-200, 550, 1400, 100);
+        Actor ground = new Actor(-200, 500, 1400, 100);
         actorManager.addActor(ground);
 
         Actor platform1 = new Actor(0, 400, 300, 20);
@@ -77,25 +75,16 @@ public class WorldFactory
         actorManager.addActor(platform2);
 
         actorManager.addActor(new Prop(550, 360, 30, 30, "Coin"));
-        actorManager.addActor(new Prop(800, 360, 30, 30, "Coin"));
 
         Actor platform3 = new Actor(250, 300, 200, 20);
         actorManager.addActor(platform3);
-        Actor platform4 = new Actor(750, 300, 200, 20);
-        actorManager.addActor(platform4);
 
-        actorManager.addActor(new Prop(770, 260, 50, 50, "Crate"));
 
         actorManager.addActor(new Actor(100, 220, 100, 15));
         actorManager.addActor(new Actor(400, 220, 100, 15));
-        actorManager.addActor(new Actor(700, 220, 100, 15));
 
         Enemy enemy1 = new Enemy(100, 530);
         enemy1.setMoveSpeed(1.0);
         actorManager.addActor(enemy1);
-
-        Enemy enemy2 = new Enemy(600, 530);
-        enemy2.setMoveSpeed(1.5);
-        actorManager.addActor(enemy2);
     }
 }
