@@ -60,7 +60,7 @@ public class Controller {
         mainStage = stage;
     }
 
-    Text topLeftText,gameOverText;
+    Text topLeftText,gameOverText,youWonGameText;
 
     public void handleHostMenuButton(ActionEvent actionEvent) throws IOException, ClassNotFoundException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("hostMenu.fxml"));
@@ -175,9 +175,26 @@ public class Controller {
         double paneWidth = gamePane.getPrefWidth() > 0 ? gamePane.getPrefWidth() : 700;
         double paneHeight = gamePane.getPrefHeight() > 0 ? gamePane.getPrefHeight() : 550;
 
-// Center the text
+        // Center the text
         gameOverText.setX((paneWidth - textWidth) / 2);
         gameOverText.setY((paneHeight - textHeight) / 2);
+
+        // Create and style the text
+        youWonGameText = new Text(50, 50, "YOU WON!"); // X=50, Y=50 - tymczasowe, zostanie nadpisane
+        youWonGameText.setFill(Color.LIME); // Zielony kolor zwycięstwa
+        youWonGameText.setFont(Font.font("Arial", 50)); // Set font and size
+        youWonGameText.setVisible(false); // Hide initially
+        gamePane.getChildren().add(youWonGameText);
+
+// Get dimensions
+        double textYouWonWidth = youWonGameText.getLayoutBounds().getWidth();
+        double textYouWonHeight = youWonGameText.getLayoutBounds().getHeight();
+
+
+// Center the text
+        youWonGameText.setX((paneWidth - textYouWonWidth) / 2);
+        youWonGameText.setY((paneHeight - textYouWonHeight) / 2);
+
 
         startGameLoop();
 
@@ -307,5 +324,11 @@ public class Controller {
             actorManager.removeActorClientSide(actorId);
             System.out.println("CLIENT: Removed actor " + actorId);
         }
+    }
+
+    public void showYouWon() {
+        System.out.println("It should show text: YOU WON");
+        youWonGameText.setVisible(true); // Hide initially
+
     }
 }

@@ -12,6 +12,9 @@ public class ServerMessages
     // Format: PLAYER_ID:playerId
     public static final String PLAYER_ID = "PLAYER_ID:";
 
+
+    public static final String YOU_WON_GAME = "YOU_WON_GAME";
+
     public static final String HAS_GAME_CHANGED = "HAS_GAME_CHANGED";
 
     // Format: ADD_ACTOR:actorId:type:x:y:width:height[:prop1:value1...]

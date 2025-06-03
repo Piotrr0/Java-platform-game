@@ -302,7 +302,6 @@ public class Server implements Runnable {
                     broadcastMessage(ServerMessages.HAS_GAME_CHANGED);
 
                     if(areAllPlayersDead()){
-
                         System.out.println("All players are dead!");
                         broadcastMessage(ServerMessages.FINISH_GAME);
                         return;
@@ -346,7 +345,6 @@ public class Server implements Runnable {
         }
 
         public boolean areAllPlayersDead(){
-            System.out.println("deaths: "+deaths);
             if(deaths==2){
                 return true;
             }
@@ -371,12 +369,16 @@ public class Server implements Runnable {
                 System.out.println("I should inform clients to refresh the score");
                 if(activeWorld.checkAndIncrementCoinCount())
                 {
+
                     broadcastMessage("REFRESH_SCORE:"+activeWorld.getCollectedCoins());
                     try {
                         String nextLevelName = activeWorld.getNextLevelName();
                         if(nextLevelName.equals(activeWorld.getWorldName())) {
+                            System.out.println("You won");
+                            broadcastMessage("YOU_WON_GAME");
                             return;
                         }
+                        System.out.println("Next level is :"+nextLevelName);
                         changeWorld(nextLevelName);
                     } catch (IOException e) {
                         throw new RuntimeException(e);

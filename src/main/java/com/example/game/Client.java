@@ -132,6 +132,11 @@ public class Client{
             System.out.println("All players should die");
         }
 
+        void handleYouWonGame() {
+            controller.showYouWon();
+            System.out.println("You won");
+        }
+
 
         //We just decide to refresh a score
         private void handleRefreshScore(String msg) {
@@ -160,6 +165,9 @@ public class Client{
             }
             else if (msg.equals(ServerMessages.FINISH_GAME)) {
                 handleFinishGame(msg);
+            }
+            else if (msg.equals(ServerMessages.YOU_WON_GAME)) {
+                handleYouWonGame();
             }
 
             else if(msg.startsWith(ServerMessages.REFRESH_SCORE)){
