@@ -23,6 +23,8 @@ public class Server implements Runnable {
     private List<Game> games;
     private List<Thread> gameThreads;
 
+
+
     //This variable defines how often server asks clients, it defines the ping/latency, its expressed in miliseconds
     private final int polingInterval = 30;
 
@@ -219,6 +221,7 @@ public class Server implements Runnable {
         private ConcurrentLinkedQueue<ClientCommand> commandQueue; //in game
         public boolean gameHasStarted = false;
         private int score = 0;
+        int deaths = 0;
 
         public Game()
         {
@@ -298,6 +301,13 @@ public class Server implements Runnable {
                     broadcastActorStates();
                     broadcastMessage(ServerMessages.HAS_GAME_CHANGED);
 
+                    if(areAllPlayersDead()){
+
+                        System.out.println("All players are dead!");
+                        broadcastMessage(ServerMessages.FINISH_GAME);
+                        return;
+                    }
+
 
                 } else {
                     try {
@@ -326,10 +336,21 @@ public class Server implements Runnable {
                     if(actor.getType()=="Crate"|| actor.getType()=="Coin"){
                         handlePropRemoval((Prop) actor);
                     }
+                    if(actor.getType()=="Player"){
+                        deaths++;
+                    }
                     worldManager.getActiveWorld().getActorManager().removeActor(idOfActor);
                     broadcastMessage("REMOVE_ACTOR:"+idOfActor);
                 }
             }
+        }
+
+        public boolean areAllPlayersDead(){
+            System.out.println("deaths: "+deaths);
+            if(deaths==2){
+                return true;
+            }
+            return false;
         }
 
         /**

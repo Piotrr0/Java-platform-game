@@ -14,9 +14,11 @@ public class WorldFactory
         switch (worldName) {
             case "Level1":
                 setupLevel1(world);
+                world.coinThreshold = 2;
                 break;
             case "Level2":
                 setupLevel2(world);
+                world.coinThreshold = 1;
                 break;
         }
 

@@ -60,7 +60,7 @@ public class Controller {
         mainStage = stage;
     }
 
-    Text topLeftText;
+    Text topLeftText,gameOverText;
 
     public void handleHostMenuButton(ActionEvent actionEvent) throws IOException, ClassNotFoundException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("hostMenu.fxml"));
@@ -115,6 +115,10 @@ public class Controller {
         topLeftText.setText(msg);
     }
 
+    public void showGameOver(){
+        gameOverText.setVisible(true); // Hide initially
+    }
+
     private void startGameLoop() {
         if (gameLoop == null) {
             gameLoop = new AnimationTimer() {
@@ -158,6 +162,22 @@ public class Controller {
         topLeftText.setFill(Color.WHITE); // Set text color
         topLeftText.setFont(Font.font("Arial", 16)); // Set font and size
         gamePane.getChildren().add(topLeftText);
+
+        // Create and style the text
+        gameOverText = new Text(50, 50, "GAME OVER!"); // X=10, Y=20 (top-left)
+        gameOverText.setFill(Color.WHITE); // Set text color
+        gameOverText.setFont(Font.font("Arial", 50)); // Set font and size
+        gameOverText.setVisible(false); // Hide initially
+        gamePane.getChildren().add(gameOverText);
+
+        double textWidth = gameOverText.getLayoutBounds().getWidth();
+        double textHeight = gameOverText.getLayoutBounds().getHeight();
+        double paneWidth = gamePane.getPrefWidth() > 0 ? gamePane.getPrefWidth() : 700;
+        double paneHeight = gamePane.getPrefHeight() > 0 ? gamePane.getPrefHeight() : 550;
+
+// Center the text
+        gameOverText.setX((paneWidth - textWidth) / 2);
+        gameOverText.setY((paneHeight - textHeight) / 2);
 
         startGameLoop();
 

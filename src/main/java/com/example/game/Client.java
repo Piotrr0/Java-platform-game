@@ -127,6 +127,12 @@ public class Client{
             }
         }
 
+        void handleFinishGame(String msg) {
+            controller.showGameOver();
+            System.out.println("All players should die");
+        }
+
+
         //We just decide to refresh a score
         private void handleRefreshScore(String msg) {
             int scoreNumber = Integer.parseInt(msg.substring(msg.indexOf(":") + 1));
@@ -152,6 +158,10 @@ public class Client{
             } else if (msg.equals(ServerMessages.HAS_GAME_CHANGED)) {
                 handleGameHasChanged(msg);
             }
+            else if (msg.equals(ServerMessages.FINISH_GAME)) {
+                handleFinishGame(msg);
+            }
+
             else if(msg.startsWith(ServerMessages.REFRESH_SCORE)){
                 handleRefreshScore(msg);
             }

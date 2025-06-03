@@ -10,7 +10,7 @@ public class World {
     private final String worldName;
     private ActorManager actorManager;
 
-    private int coinThreshold = 1;
+    public int coinThreshold = 2;
     private int collectedCoins = 0;
     public String nextLevelName = "Level2";
 
