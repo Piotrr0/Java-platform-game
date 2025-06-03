@@ -222,6 +222,7 @@ public class Server implements Runnable {
         public boolean gameHasStarted = false;
         private int score = 0;
         int deaths = 0;
+        boolean gameFinished = false;
 
         public Game()
         {
@@ -306,6 +307,9 @@ public class Server implements Runnable {
                         broadcastMessage(ServerMessages.FINISH_GAME);
                         return;
                     }
+                    if(gameFinished){
+                        return; //ends game thread
+                    }
 
 
                 } else {
@@ -367,15 +371,17 @@ public class Server implements Runnable {
             //We want to handle logic of collecting a point
             else if(prop.getType().equals("Coin")){
                 System.out.println("I should inform clients to refresh the score");
-                if(activeWorld.checkAndIncrementCoinCount())
+                broadcastMessage("REFRESH_SCORE:"+activeWorld.getCollectedCoins());
+                if(activeWorld.checkCoinCount())
                 {
 
-                    broadcastMessage("REFRESH_SCORE:"+activeWorld.getCollectedCoins());
+
                     try {
                         String nextLevelName = activeWorld.getNextLevelName();
                         if(nextLevelName.equals(activeWorld.getWorldName())) {
                             System.out.println("You won");
                             broadcastMessage("YOU_WON_GAME");
+                            gameFinished = true;
                             return;
                         }
                         System.out.println("Next level is :"+nextLevelName);

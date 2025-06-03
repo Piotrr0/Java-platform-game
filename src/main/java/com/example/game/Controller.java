@@ -113,6 +113,7 @@ public class Controller {
 
     public void refreshScoreText(String msg){
         topLeftText.setText(msg);
+        System.out.println("score updated: " + msg);
     }
 
     public void showGameOver(){
@@ -177,7 +178,7 @@ public class Controller {
 
         // Center the text
         gameOverText.setX((paneWidth - textWidth) / 2);
-        gameOverText.setY((paneHeight - textHeight) / 2);
+        gameOverText.setY(50);
 
         // Create and style the text
         youWonGameText = new Text(50, 50, "YOU WON!"); // X=50, Y=50 - tymczasowe, zostanie nadpisane
@@ -193,7 +194,7 @@ public class Controller {
 
 // Center the text
         youWonGameText.setX((paneWidth - textYouWonWidth) / 2);
-        youWonGameText.setY((paneHeight - textYouWonHeight) / 2);
+        youWonGameText.setY(50);
 
 
         startGameLoop();

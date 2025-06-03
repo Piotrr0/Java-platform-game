@@ -24,9 +24,10 @@ public class World {
     public ActorManager getActorManager() { return actorManager; }
     public Actor getActorFromId(int id) {return actorManager.getActor(id);}
 
-    public int getCollectedCoins() { return this.collectedCoins; }
-    public boolean checkAndIncrementCoinCount() {
+    public int getCollectedCoins() {
         collectedCoins++;
+        return collectedCoins; }
+    public boolean checkCoinCount() {
         return collectedCoins >= coinThreshold;
     }
 
