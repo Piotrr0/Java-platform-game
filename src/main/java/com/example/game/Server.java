@@ -261,7 +261,7 @@ public class Server implements Runnable {
                 if (activeWorld.getActorManager().getPlayer(clientConnection.getPlayerId()) == null) {
                     Player player = activeWorld.getActorManager().createPlayer(
                             clientConnection.getPlayerId(),
-                            100.0 + (clientConnection.getPlayerId() * 60),
+                            50.0 + (clientConnection.getPlayerId() * 60),
                             100.0
                     );
                     if (player != null) {
@@ -344,6 +344,26 @@ public class Server implements Runnable {
                     }
                     worldManager.getActiveWorld().getActorManager().removeActor(idOfActor);
                     broadcastMessage("REMOVE_ACTOR:"+idOfActor);
+                    //generating new world here after removing last coin
+                    World activeWorld = worldManager.getActiveWorld();
+                    if(activeWorld.checkCoinCount())
+                    {
+
+
+                        try {
+                            String nextLevelName = activeWorld.getNextLevelName();
+                            if(nextLevelName.equals(activeWorld.getWorldName())) {
+                                System.out.println("You won");
+                                broadcastMessage("YOU_WON_GAME");
+                                gameFinished = true;
+                                return;
+                            }
+                            System.out.println("Next level is :"+nextLevelName);
+                            changeWorld(nextLevelName);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
                 }
             }
         }
@@ -372,25 +392,9 @@ public class Server implements Runnable {
             else if(prop.getType().equals("Coin")){
                 System.out.println("I should inform clients to refresh the score");
                 broadcastMessage("REFRESH_SCORE:"+activeWorld.getCollectedCoins());
-                if(activeWorld.checkCoinCount())
-                {
 
-
-                    try {
-                        String nextLevelName = activeWorld.getNextLevelName();
-                        if(nextLevelName.equals(activeWorld.getWorldName())) {
-                            System.out.println("You won");
-                            broadcastMessage("YOU_WON_GAME");
-                            gameFinished = true;
-                            return;
-                        }
-                        System.out.println("Next level is :"+nextLevelName);
-                        changeWorld(nextLevelName);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
             }
+
         }
 
         private void broadcastActorStates() {
@@ -494,9 +498,10 @@ public class Server implements Runnable {
                 for (ClientConnection cc : connectedClients) {
                     currentPlayerIds.add(cc.getPlayerId());
                 }
-
+                int counter=0;
                 for (int pId : currentPlayerIds) {
-                    world.getActorManager().createPlayer(pId, 50.0, 50.0);
+                    world.getActorManager().createPlayer(pId, 50.0 + 60*counter, 300);
+                    counter++;
                 }
 
                 List<Actor> actorsInNewWorld = worldManager.getActiveWorld().getActorManager().getAllActorsServer();

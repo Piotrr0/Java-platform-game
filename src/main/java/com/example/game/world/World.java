@@ -12,12 +12,12 @@ public class World {
 
     public int coinThreshold = 2;
     private int collectedCoins = 0;
-    public String nextLevelName = "Level2";
-
-    public World(String worldName)
+    public String nextLevelName;
+    public World(String worldName, String nextWorld)
     {
         this.worldName = worldName;
         actorManager = new ActorManager();
+        nextLevelName = nextWorld;
     }
 
     public String getWorldName() { return worldName; }

@@ -31,21 +31,24 @@ public class WorldManager
     public void update() {
         if (activeWorld != null) {
             activeWorld.update();
-            ;
         }
     }
 
     public void initializeDefaultWorlds()
     {
-        World level1 = WorldFactory.createWorld("Level1");
+        World level1 = WorldFactory.createWorld("Level1", "Level2");
         registerWorld(level1);
 
-        World level2 = WorldFactory.createWorld("Level2");
+        World level2 = WorldFactory.createWorld("Level2", "Level3");
         registerWorld(level2);
+
+        World level3 = WorldFactory.createWorld("Level3", "Level3");
+        registerWorld(level3);
     }
 
     public Player createPlayerInActiveWorld(int playerId, double x, double y) {
         if (activeWorld != null) {
+
             return activeWorld.getActorManager().createPlayer(playerId, x, y);
         }
         return null;
